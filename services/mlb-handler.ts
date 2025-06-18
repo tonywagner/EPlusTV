@@ -722,8 +722,8 @@ class MLBHandler {
         const airingData = e.airings[0];
 
         if (airingData) {
-          const start = moment(airingData.accessRights.live.startTime);
-          const end = moment(airingData.accessRights.live.endTime);
+          const start = moment(airingData.accessRightsV2.live.startTime);
+          const end = moment(airingData.accessRightsV2.live.endTime);
 
           bigInnings.push([start, end]);
         }
