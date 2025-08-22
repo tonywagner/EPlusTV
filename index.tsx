@@ -176,29 +176,29 @@ app.get('/', async c => {
             <Tools />
             <Options />
             <Providers>
-              <ESPNPlus />
-              <NFL />
-              <MlbTv />
-              <FoxSports />
+              <Bally />
+              <B1G />
               <CBSSports />
               <ESPN />
-              <Paramount />
-              <Nesn />
-              <Gotham />
-              <Victory />
-              <B1G />
-              <Outside />
+              <ESPNPlus />
               <FloSports />
-              <NHL />
-              <MntWest />
-              <NorthernSun />
-              <Bally />
-              <WNBA />
-              <PWHL />
-              <Nwsl />
-              <LOVB />
-              <WSN />
+              <FoxSports />
+              <Gotham />
               <KBO />
+              <LOVB />
+              <MlbTv />
+              <MntWest />
+              <Nesn />
+              <NHL />
+              <NFL />
+              <NorthernSun />
+              <Nwsl />
+              <Outside />
+              <Paramount />
+              <PWHL />
+              <Victory />
+              <WNBA />
+              <WSN />
             </Providers>
           </Main>
           <Style />

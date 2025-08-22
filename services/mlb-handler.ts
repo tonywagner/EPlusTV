@@ -719,14 +719,15 @@ class MLBHandler {
       );
 
       data.data.forEach(e => {
-        const airingData = e.airings[0];
+        e.airings.some(airingData => {
+          if (airingData.station.name == 'MLB Big Inning') {
+            const start = moment(airingData.accessRightsV2.live.startTime);
+            const end = moment(airingData.accessRightsV2.live.endTime);
 
-        if (airingData) {
-          const start = moment(airingData.accessRights.live.startTime);
-          const end = moment(airingData.accessRights.live.endTime);
-
-          bigInnings.push([start, end]);
-        }
+            bigInnings.push([start, end]);
+            return true;
+          }
+        });
       });
 
       return bigInnings;

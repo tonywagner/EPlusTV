@@ -2,10 +2,10 @@
   <img src="https://i.imgur.com/FIGZdR3.png">
 </p>
 
-Current version: **4.10.0**
+Current version: **4.10.1**
 
 # About
-This takes ESPN+, ESPN, FOX Sports, CBS Sports, Paramount+, Gotham Sports, NFL, B1G+, NESN, Mountain West, Northern Sun, KBO, Victory+, NHL.tv, FloSports, LOVB Live, PWHL, or MLB.tv programming and transforms it into a "live TV" experience with virtual linear channels. It will discover what is on, and generate a schedule of channels that will give you M3U and XMLTV files that you can import into something like [Jellyfin](https://jellyfin.org) or [Channels](https://getchannels.com).
+This takes programming from various providers and transforms it into a "live TV" experience with virtual linear channels. It will discover what is on, and generate a schedule of channels that will give you M3U and XMLTV files that you can import into something like [Jellyfin](https://jellyfin.org) or [Channels](https://getchannels.com).
 
 ## Notes
 * This was not made for pirating streams. This is made for using your own credentials and have a different presentation than the streaming apps currently provide.
@@ -22,7 +22,7 @@ The server exposes 4 main endpoints:
 | /linear-xmltv.xml | The linear schedule that you'll import into your client (only used when using the dedicated linear channels option) - Not needed for Channels DVR |
 
 # Running
-The recommended way of running is to pull the image from [Docker Hub](https://hub.docker.com/r/m0ngr31/eplustv).
+The recommended way of running is to pull the image from [Docker Hub](https://hub.docker.com/r/tonywagner/eplustv).
 
 ## Environment Variables
 | Environment Variable | Description | Required? | Default |
@@ -34,14 +34,17 @@ The recommended way of running is to pull the image from [Docker Hub](https://hu
 
 ### Available Providers
 
-#### ESPN+
+#### Bally
 
-Available to login with ESPN+ credentials
+Available for free
 
-##### Extras
-| Name | Description |
-|---|---|
-| ESPN+ PPV | Schedule ESPN+ PPV events |
+#### B1G+
+
+Available to login with B1G+ credentials (or for free with certain ISP providers)
+
+#### CBS Sports
+
+Available to login with TV Provider. Please note that there is no token refresh option here. It will require re-authenticating every 30 days.
 
 #### ESPN
 
@@ -68,6 +71,19 @@ Will create dedicated linear channels if using dedicated linear channels, otherw
 | SEC Network+ | Set if your TV provider supports it |
 | ACC Network Extra | Set if your TV provider supports it |
 
+#### ESPN+
+
+Available to login with ESPN+ credentials
+
+##### Extras
+| Name | Description |
+|---|---|
+| ESPN+ PPV | Schedule ESPN+ PPV events |
+
+#### FloSports
+
+Available to login with FloSports credentials
+
 #### FOX Sports
 
 Available to login with TV Provider
@@ -83,22 +99,68 @@ Some events are on linear channels and some aren't. If you use dedicated linear 
 | B1G Network |
 | FOX Soccer Plus |
 
-#### Paramount+
+#### Gotham Sports
 
-Available to login with Paramount+ credentials
+Available to login with Gotham Sports or TV Provider
 
 ##### Linear Channels
 
-Dedicated linear channels - Will only schedule when dedicated linear channels is set
+Will create dedicated linear channels if using dedicated linear channels, otherwise will schedule events normally
 
 | Network Name | Description |
 |---|---|
-| CBS Sports HQ | Set if your TV provider supports it |
-| Golazo Network | Set if your TV provider supports it |
+| MSG | MSG (If in your supported zone) |
+| MSGSN | MSG Sportsnet HD (If in your supported zone) |
+| MSG2 | MSG2 HD (If in your supported zone) |
+| MSGSN2 | MSG Sportsnet 2 HD (If in your supported zone) |
+| YES | Yes Network (If in your supported zone) |
 
-#### CBS Sports
+#### KBO
 
-Available to login with TV Provider. Please note that there is no token refresh option here. It will require re-authenticating every 30 days.
+Available for free
+
+#### LOVB Live
+
+Available for free
+
+#### MLB.tv
+
+Available to login with MLB.tv credentials
+
+##### Extras
+| Name | Description |
+|---|---|
+| Only free games | If you have a free account, only 1 free game per day will be scheduled |
+
+##### Linear Channels
+
+| Network Name | Description |
+|---|---|
+| Big Inning | Will create a dedicated linear channel if using dedicated linear channels, otherwise will schedule Big Inning normally |
+| MLB Network | Only available if you have MLB Network as part of your MLB.tv account or have linked TVE Provider that provides access |
+| SNY | Only available if you have SNY as part of your MLB.tv account or have linked TVE Provider that provides access |
+| SNLA | Only available if you have SNLA+ as part of your MLB.tv account or have linked TVE Provider that provides access |
+
+#### Mountain West
+
+Available for free
+
+#### NESN
+
+Available to login with NESN+ or TV Provider
+
+##### Linear Channels
+
+Will create dedicated linear channels if using dedicated linear channels, otherwise will schedule events normally
+
+| Network Name | Description |
+|---|---|
+| NESN | New England Sports Network HD |
+| NESN+ | New England Sports Network Plus HD |
+
+#### NHL.tv
+
+Available to login with NHL.tv account (Europe only)
 
 #### NFL
 
@@ -127,50 +189,13 @@ If you have access to NFL RedZone, it will be scheduled. If dedicated linear cha
 | NFL RedZone | NFL+ Premium or TV Provider access |
 | NFL Channel | Free channel for all accounts |
 
-#### NESN
-
-Available to login with NESN+ or TV Provider
-
-##### Linear Channels
-
-Will create dedicated linear channels if using dedicated linear channels, otherwise will schedule events normally
-
-| Network Name | Description |
-|---|---|
-| NESN | New England Sports Network HD |
-| NESN+ | New England Sports Network Plus HD |
-
-#### Gotham Sports
-
-Available to login with Gotham Sports or TV Provider
-
-##### Linear Channels
-
-Will create dedicated linear channels if using dedicated linear channels, otherwise will schedule events normally
-
-| Network Name | Description |
-|---|---|
-| MSG | MSG (If in your supported zone) |
-| MSGSN | MSG Sportsnet HD (If in your supported zone) |
-| MSG2 | MSG2 HD (If in your supported zone) |
-| MSGSN2 | MSG Sportsnet 2 HD (If in your supported zone) |
-| YES | Yes Network (If in your supported zone) |
-
-#### Victory+
-
-Available to login with Victory+ credentials.
-
-#### B1G+
-
-Available to login with B1G+ credentials (or for free with certain ISP providers)
-
-#### FloSports
-
-Available to login with FloSports credentials
-
-#### KBO
+#### Northern Sun
 
 Available for free
+
+#### NWSL+
+
+Available to login with NWSL+ credentials
 
 #### Outside TV
 
@@ -184,47 +209,30 @@ Dedicated linear channels - Will only schedule when dedicated linear channels is
 |---|
 | Outside |
 
-#### MLB.tv
+#### Paramount+
 
-Available to login with MLB.tv credentials
-
-##### Extras
-| Name | Description |
-|---|---|
-| Only free games | If you have a free account, only 1 free game per day will be scheduled |
+Available to login with Paramount+ credentials
 
 ##### Linear Channels
 
+Dedicated linear channels - Will only schedule when dedicated linear channels is set
+
 | Network Name | Description |
 |---|---|
-| Big Inning | Will create a dedicated linear channel if using dedicated linear channels, otherwise will schedule Big Inning normally |
-| MLB Network | Only available if you have MLB Network as part of your MLB.tv account or have linked TVE Provider that provides access |
-| SNY | Only available if you have SNY as part of your MLB.tv account or have linked TVE Provider that provides access |
-| SNLA | Only available if you have SNLA+ as part of your MLB.tv account or have linked TVE Provider that provides access |
-
-#### NHL.tv
-
-Available to login with NHL.tv account (Europe only)
-
-#### Mountain West
-
-Available for free
-
-#### Northern Sun
-
-Available for free
-
-#### WNBA League Pass
-
-Available to login with WNBA League Pass credentials
+| CBS Sports HQ | Set if your TV provider supports it |
+| Golazo Network | Set if your TV provider supports it |
 
 #### PWHL
 
 Available for free
 
-#### LOVB Live
+#### Victory+
 
-Available for free
+Available to login with Victory+ credentials.
+
+#### WNBA League Pass
+
+Available to login with WNBA League Pass credentials
 
 #### Women's Sports Network
 
@@ -246,13 +254,13 @@ Available for free - only linear channel
 By default, the easiest way to get running is:
 
 ```bash
-docker run -p 8000:8000 -v config_dir:/app/config m0ngr31/eplustv
+docker run -p 8000:8000 -v config_dir:/app/config tonywagner/eplustv
 ```
 
 If you run into permissions issues:
 
 ```bash
-docker run -p 8000:8000 -v config_dir:/app/config -e PUID=$(id -u $USER) -e PGID=$(id -g $USER) m0ngr31/eplustv
+docker run -p 8000:8000 -v config_dir:/app/config -e PUID=$(id -u $USER) -e PGID=$(id -g $USER) tonywagner/eplustv
 ```
 
 Open the service in your web browser at `http://<ip>:8000`
