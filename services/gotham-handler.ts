@@ -320,6 +320,10 @@ class GothamHandler {
               },
             });
 
+            if ( !data.data ) {
+              continue;
+            }
+
             data.data.forEach(d => {
               d.airing.forEach(airing => {
                 const eventName = airing.pgm.lon[0].n.replace(/\n/g, '');
