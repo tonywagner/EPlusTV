@@ -44,45 +44,33 @@ interface IAdobePrelimAuthToken {
 }
 
 interface IFoxEvent {
-  airingType: string;
-  audioOnly: boolean;
-  broadcastID: string;
-  callSign: string;
-  categoryTags: string[];
-  id: string;
+  airing_type: string;
+  audio_only: boolean;
+  call_sign: string;
+  tags: string[];
+  entity_id: string;
   genres: string[];
-  name: string;
-  longDescription: string;
-  seriesType: string;
-  sportTag?: string;
-  startDate: string;
-  endDate: string;
+  title: string;
+  description: string;
+  sport_uri?: string;
+  start_time: string;
+  end_time: string;
   network: string;
   streamTypes: string[];
   images: {
-    logo?: {
-      FHD: string;
-    };
-    seriesDetail?: {
-      FHD: string;
-    };
-    seriesList?: {
-      FHD: string;
-    };
+    logo?: string;
+    series_detail?: string;
+    series_list?: string;
   };
-  isUHD: boolean;
-  contentSKUResolved?: {
-    baseId: string;
-  }[];
+  isUHD?: boolean;
 }
 
 interface IFoxEventsData {
-  panels: {
-    member?: {
-      items: {
-        member: IFoxEvent[];
-      };
-    }[];
+  data: {
+    listings: {
+	    item_count: number;
+      items: IFoxEvent[];
+    };
   };
 }
 
@@ -91,6 +79,41 @@ interface IFoxMeta {
   uhd?: boolean;
   dtc_events?: boolean;
 }
+
+const EPG_API_KEY = [
+  'c',
+  'f',
+  '2',
+  '8',
+  '9',
+  'e',
+  '2',
+  '9',
+  '9',
+  'e',
+  'f',
+  'd',
+  'f',
+  'a',
+  '3',
+  '9',
+  'f',
+  'b',
+  '6',
+  '3',
+  '1',
+  '6',
+  'f',
+  '2',
+  '5',
+  '9',
+  'd',
+  '1',
+  'd',
+  'e',
+  '9',
+  '3',
+].join('');
 
 const foxConfigPath = path.join(configPath, 'fox_tokens.json');
 
@@ -105,14 +128,14 @@ const getMaxRes = (res: string) => {
 
 const parseCategories = (event: IFoxEvent) => {
   const categories = ['FOX Sports', 'FOX'];
-  for (const classifier of [...(event.categoryTags || []), ...(event.genres || [])]) {
+  for (const classifier of [...(event.tags || []), ...(event.genres || [])]) {
     if (classifier !== null) {
       categories.push(classifier);
     }
   }
 
-  if (event.sportTag) {
-    categories.push(event.sportTag);
+  if (event.sport_uri) {
+    categories.push(event.sport_uri);
   }
 
   if (event.streamTypes?.find(resolution => resolution === 'HDR' || resolution === 'SDR') || event.isUHD) {
@@ -130,12 +153,12 @@ const parseAirings = async (events: IFoxEvent[]) => {
   const {meta} = await db.providers.findOneAsync<IProvider<any, IFoxMeta>>({name: 'foxsports'});
 
   for (const event of events) {
-    const entryExists = await db.entries.findOneAsync<IEntry>({id: `${event.id.replace('_dtc', '')}`});
+    const entryExists = await db.entries.findOneAsync<IEntry>({id: `${event.entity_id.replace('_dtc', '')}`});
 
     if (!entryExists) {
-      const start = moment(event.startDate);
-      const end = moment(event.endDate);
-      const originalEnd = moment(event.endDate);
+      const start = moment(event.start_time);
+      const end = moment(event.end_time);
+      const originalEnd = moment(event.end_time);
 
       const isLinear = event.network !== 'fox' && useLinear;
 
@@ -153,7 +176,7 @@ const parseAirings = async (events: IFoxEvent[]) => {
         continue;
       }
 
-      const eventName = `${event.sportTag === 'NFL' ? `${event.sportTag} - ` : ''}${event.name}`;
+      const eventName = `${event.sport_uri === 'NFL' ? `${event.sport_uri} - ` : ''}${event.title}`;
 
       console.log('Adding event: ', eventName);
 
@@ -162,12 +185,12 @@ const parseAirings = async (events: IFoxEvent[]) => {
         duration: end.diff(start, 'seconds'),
         end: end.valueOf(),
         from: 'foxsports',
-        id: event.id.replace('_dtc', ''),
-        image: event.images.logo?.FHD || event.images.seriesDetail?.FHD || event.images.seriesList?.FHD,
+        id: event.entity_id.replace('_dtc', ''),
+        image: event.images.logo || event.images.series_detail || event.images.series_list,
         name: eventName,
-        network: event.callSign,
+        network: event.call_sign,
         originalEnd: originalEnd.valueOf(),
-        replay: event.airingType !== 'live',
+        replay: event.airing_type !== 'live',
         start: start.valueOf(),
         ...(isLinear && {
           channel: event.network,
@@ -187,12 +210,16 @@ const willPrelimTokenExpire = (token: IAdobePrelimAuthToken): boolean =>
 const willAuthTokenExpire = (token: IAdobeAuthFox): boolean =>
   new Date().valueOf() + 3600 * 1000 * 24 > (token?.tokenExpiration || 0);
 
-const getEventNetwork = (event: IFoxEvent): string => {
-  if (event.contentSKUResolved && event.contentSKUResolved[0]) {
-    return event.contentSKUResolved[0].baseId.split('.')[1];
+const checkEventNetwork = (entitlements, event: IFoxEvent): boolean => {
+  if (event.network) {
+	for(let i=0; i<entitlements.length; i++) {
+	  if (entitlements[i].split('-')[0] == event.network) {
+	    return true;
+	  }
+	}
   }
 
-  return 'not-entitled';
+  return false;
 };
 
 class FoxHandler {
@@ -434,33 +461,41 @@ class FoxHandler {
 
     const [now, inTwoDays] = normalTimeRange();
 
-    const dateRange = `${now.toISOString()}..${inTwoDays.toISOString()}`;
+    const startTime = now.unix();
+    const endTime = inTwoDays.unix();
 
     try {
-      const {data} = await axios.get<IFoxEventsData>(
-        encodeURI(`https://api3.fox.com/v2.0/screens/live?dateRange=${dateRange}`),
-        {
-          headers: {
-            'User-Agent': userAgent,
-            authorization: `Bearer ${this.adobe_prelim_auth_token.accessToken}`,
-            'x-api-key': this.appConfig.api.key,
+      let max_items_per_page = 50;
+      let pages = 1;
+
+      for (let page = 1; page <= pages; page++) {
+        const {data} = await axios.get<IFoxEventsData>(
+          `https://api.fox.com/fs/product/curated/v1/sporting/keystone/detail/by_filters?callsign=BTN%2CBTN-DIGITAL%2CFOX%2CFOX-DIGITAL%2CFOXDEP%2CFOXDEP-DIGITAL%2CFS1%2CFS1-DIGITAL%2CFS2%2CFS2-DIGITAL%2CFSP&end_date=${endTime}&page=${page}&size=${max_items_per_page}&start_date=${startTime}&video_type=listing`,
+          {
+            headers: {
+              'User-Agent': userAgent,
+              authorization: `Bearer ${this.adobe_prelim_auth_token.accessToken}`,
+              'x-fox-apikey': EPG_API_KEY,
+            },
           },
-        },
-      );
+        );
 
-      debug.saveRequestData(data, 'foxsports', 'epg');
+        if ( data.data.listings.item_count ) {
+          pages = Math.ceil(data.data.listings.item_count / max_items_per_page);
+        }
 
-      _.forEach(data.panels.member, member => {
-        _.forEach(member.items.member, m => {
+        debug.saveRequestData(data, 'foxsports', 'epg');
+
+        _.forEach(data.data.listings.items, m => {
           if (
-            _.some(this.entitlements, network => network === getEventNetwork(m)) &&
-            !m.audioOnly &&
-            m.startDate &&
-            m.endDate &&
-            m.id
+            checkEventNetwork(this.entitlements, m) &&
+            !m.audio_only &&
+            m.start_time &&
+            m.end_time &&
+            m.entity_id
           ) {
             if (!useLinear) {
-              if (m.airingType === 'live' || m.airingType === 'new') {
+              if (m.airing_type === 'live' || m.airing_type === 'new') {
                 events.push(m);
               }
             } else {
@@ -468,7 +503,7 @@ class FoxHandler {
             }
           }
         });
-      });
+      }
     } catch (e) {
       console.log(e);
     }
