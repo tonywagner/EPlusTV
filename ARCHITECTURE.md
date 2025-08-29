@@ -395,6 +395,81 @@ npx ts-node -r tsconfig-paths/register debug/interactive-debug.ts
 # Set breakpoints and press F5 - configurations in .vscode/launch.json
 ```
 
+### Common Debugging Patterns
+
+#### Global Settings vs Provider-Specific Logic
+
+**Issue Pattern**: Provider features may depend on both global settings and provider-specific configuration.
+
+**Example**: ESPN Ultimate linear channels require:
+1. Global `use_linear` setting OR ESPN Ultimate subscription enabled
+2. Provider-specific linear channels enabled
+3. Individual channel toggles enabled
+
+**Debugging Strategy**:
+```typescript
+// Check global settings first
+const useLinear = await usesLinear();
+const ultimateEnabled = await isEnabled('ultimate');
+
+// Check provider-specific settings
+const {enabled: providerEnabled, linear_channels} = await db.providers.findOneAsync({name: 'provider'});
+const hasEnabledChannels = _.some(linear_channels, c => c.enabled);
+
+// Debug output for complex logic
+console.log('Global linear:', useLinear);
+console.log('Ultimate enabled:', ultimateEnabled);
+console.log('Provider enabled:', providerEnabled);
+console.log('Has enabled channels:', hasEnabledChannels);
+
+// Combined logic
+const shouldProcess = (useLinear || ultimateEnabled) && providerEnabled && hasEnabledChannels;
+```
+
+#### Database Entry Investigation
+
+**Issue Pattern**: Events are processed but not appearing with expected attributes.
+
+**Investigation Commands**:
+```bash
+# Check total vs filtered counts
+npx ts-node -r tsconfig-paths/register -e "
+import {db} from './services/database';
+(async () => {
+  const total = await db.entries.countAsync({from: 'provider'});
+  const filtered = await db.entries.countAsync({from: 'provider', attribute: true});
+  console.log('Total:', total, 'Filtered:', filtered);
+  
+  if (filtered === 0 && total > 0) {
+    console.log('❌ Events processed but none have expected attribute');
+    console.log('🔍 Check parsing logic in parseAirings function');
+  }
+})();
+"
+
+# Sample entry inspection
+npx ts-node -r tsconfig-paths/register -e "
+import {db} from './services/database';
+(async () => {
+  const sample = await db.entries.findAsync({from: 'provider'}, {limit: 3});
+  console.log('Sample entries:', JSON.stringify(sample, null, 2));
+})();
+"
+```
+
+#### Real-Time Processing Verification
+
+**Pattern**: When events appear to be processing but results don't match expectations, add debug logging to the parsing function:
+
+```typescript
+// In parseAirings or similar functions
+if (isSpecialCase && featureEnabled && !globalSetting) {
+  console.log(`Processing via special case: ${event.name} on ${event.network?.name}`);
+}
+```
+
+This pattern helped identify that ESPN Ultimate was correctly processing linear events even when global linear was disabled.
+
 ### Common Development Patterns
 
 #### Provider Toggle Implementation

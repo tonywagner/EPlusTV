@@ -144,6 +144,8 @@ export {provider};
 
 ## Debugging and Testing
 
+**📖 For comprehensive debugging guide, see [debug/README.md](./debug/README.md)**
+
 **Debug Scripts** (`debug/` directory):
 - Never run handler files directly with `npx ts-node services/handler.ts` 
 - Always use debug scripts: `npx ts-node -r tsconfig-paths/register debug/test-handler.ts`
@@ -151,7 +153,7 @@ export {provider};
 
 **Authentication Testing**:
 - Use `debug/espn-handler/test-with-real-tokens.ts` for real credential testing
-- See `debug/README.md` for token extraction from browsers
+- See `debug/README.md` for token extraction from browsers and injection methods
 - Test both authentication paths (e.g., BAM vs Adobe Pass for ESPN)
 
 **Common Debugging Commands**:

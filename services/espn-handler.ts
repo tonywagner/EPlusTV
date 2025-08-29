@@ -359,6 +359,7 @@ const parseCategories = event => {
 
 const parseAirings = async events => {
   const useLinear = await usesLinear();
+  const ultimateEnabled = await isEnabled('ultimate');
 
   const [now, endSchedule] = normalTimeRange();
 
@@ -373,7 +374,15 @@ const parseAirings = async events => {
     const entryExists = await db.entries.findOneAsync<IEntry>({id: event.id});
 
     if (!entryExists) {
-      const isLinear = useLinear && event.network?.id && LINEAR_NETWORKS.some(n => n === event.network?.id);
+      // Check if this is a linear event - either global linear is enabled OR Ultimate subscription allows linear access
+      const isLinearNetwork = event.network?.id && LINEAR_NETWORKS.some(n => n === event.network?.id);
+      const isLinear = isLinearNetwork && (useLinear || ultimateEnabled);
+
+      if (isLinear && ultimateEnabled && !useLinear) {
+        console.log(
+          `Processing linear event via ESPN Ultimate: ${event.name} on ${event.network?.name || event.network?.id}`,
+        );
+      }
 
       if (!isLinear && plusMeta?.hide_studio && event.program?.isStudio) {
         continue;

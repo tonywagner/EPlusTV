@@ -100,4 +100,144 @@ The scripts in this directory specifically test:
 - **Token Refresh**: Automatic token renewal and expiration handling
 - **Dual Authentication**: Running both BAM and Adobe authentication systems simultaneously
 
+## ESPN Ultimate Debugging Insights
+
+### Understanding Linear Event Processing
+
+ESPN Ultimate linear channels have complex dependency logic:
+
+```bash
+# Diagnostic command to check all ESPN Ultimate dependencies
+npx ts-node -r tsconfig-paths/register -e "
+import {db} from './services/database';
+import {usesLinear} from './services/misc-db-service';
+(async () => {
+  // Check global linear setting
+  const useLinear = await usesLinear();
+  console.log('1. Global use_linear setting:', useLinear);
+  
+  // Check ESPN+ provider and Ultimate subscription
+  const espnplus = await db.providers.findOneAsync({name: 'espnplus'});
+  console.log('2. ESPN+ enabled:', espnplus?.enabled);
+  console.log('3. Ultimate subscription:', espnplus?.meta?.ultimate_subscription);
+  
+  // Check ESPN linear provider
+  const espn = await db.providers.findOneAsync({name: 'espn'});
+  console.log('4. ESPN linear provider enabled:', espn?.enabled);
+  console.log('5. Linear channels configured:', espn?.linear_channels?.length || 0);
+  
+  const enabledChannels = espn?.linear_channels?.filter(c => c.enabled) || [];
+  console.log('6. Enabled linear channels:', enabledChannels.length);
+  
+  // Check entry results
+  const totalEntries = await db.entries.countAsync({from: 'espn'});
+  const linearEntries = await db.entries.countAsync({from: 'espn', linear: true});
+  console.log('7. Total ESPN entries:', totalEntries);
+  console.log('8. Linear ESPN entries:', linearEntries);
+  
+  // Logic check
+  const ultimateEnabled = espnplus?.meta?.ultimate_subscription && espnplus?.enabled;
+  const shouldProcessLinear = (useLinear || ultimateEnabled) && espn?.enabled && enabledChannels.length > 0;
+  console.log('\\n🔍 Should process linear channels:', shouldProcessLinear);
+  
+  if (shouldProcessLinear && linearEntries === 0) {
+    console.log('⚠️  Expected linear processing but found 0 linear entries');
+    console.log('💡 Check parseAirings function and LINEAR_NETWORKS array');
+  }
+})();
+"
+```
+
+### Network ID Mapping Issues
+
+ESPN's API returns network names (e.g., 'ESPN', 'ESPN2') but the code may expect network IDs. 
+
+**Debug Pattern**:
+```bash
+# Check what network data is actually in events
+npx ts-node -r tsconfig-paths/register -e "
+import {db} from './services/database';
+(async () => {
+  const entries = await db.entries.findAsync({from: 'espn'}, {limit: 10});
+  const networks = [...new Set(entries.map(e => e.network))].sort();
+  console.log('Actual network values in database:');
+  networks.forEach(net => console.log(\`- \${net}\`));
+  
+  // Check for channel field (linear events only)
+  const linearEntries = entries.filter(e => e.channel);
+  if (linearEntries.length > 0) {
+    const channels = [...new Set(linearEntries.map(e => e.channel))].sort();
+    console.log('\\nLinear channel IDs:');
+    channels.forEach(ch => console.log(\`- \${ch}\`));
+  }
+})();
+"
+```
+
+### Authentication State Verification
+
+When ESPN Ultimate isn't working as expected:
+
+```bash
+# Complete authentication state check
+npx ts-node -r tsconfig-paths/register -e "
+import {db} from './services/database';
+import jwt_decode from 'jwt-decode';
+
+async function debugEspnAuth() {
+  const espnplus = await db.providers.findOneAsync({name: 'espnplus'});
+  const espn = await db.providers.findOneAsync({name: 'espn'});
+  
+  console.log('📊 ESPN Authentication Debug Report');
+  console.log('===================================');
+  
+  // BAM Token Status
+  console.log('\\n🎯 BAM Tokens (ESPN+/Ultimate):');
+  console.log('ESPN+ enabled:', espnplus?.enabled);
+  console.log('Ultimate subscription:', espnplus?.meta?.ultimate_subscription);
+  console.log('Has BAM tokens:', !!espnplus?.tokens?.tokens);
+  
+  if (espnplus?.tokens?.tokens?.id_token) {
+    try {
+      const decoded = jwt_decode(espnplus.tokens.tokens.id_token);
+      const expires = new Date(decoded.exp * 1000);
+      const isValid = expires > new Date();
+      console.log('ID token expires:', expires.toLocaleString());
+      console.log('ID token valid:', isValid);
+    } catch (e) {
+      console.log('❌ Could not decode ID token');
+    }
+  }
+  
+  // Adobe Pass Status
+  console.log('\\n📺 Adobe Pass Tokens (Linear TV):');
+  console.log('ESPN linear enabled:', espn?.enabled);
+  console.log('Adobe device ID:', !!espn?.tokens?.adobe_device_id);
+  console.log('Adobe auth token:', !!espn?.tokens?.adobe_auth);
+  
+  if (espn?.tokens?.adobe_auth?.expires) {
+    const adobeExpires = new Date(espn.tokens.adobe_auth.expires);
+    const adobeValid = adobeExpires > new Date();
+    console.log('Adobe token expires:', adobeExpires.toLocaleString());
+    console.log('Adobe token valid:', adobeValid);
+  }
+  
+  // Ultimate Logic Check
+  const ultimateEnabled = (espnplus?.meta?.ultimate_subscription && espnplus?.enabled);
+  console.log('\\n🏆 Ultimate Status:');
+  console.log('Ultimate enabled:', ultimateEnabled);
+  
+  if (ultimateEnabled) {
+    console.log('✅ Ultimate should allow BAM auth for linear channels');
+  } else if (!espnplus?.enabled) {
+    console.log('⚠️  ESPN+ not enabled - Ultimate requires ESPN+ to be enabled');
+  } else if (!espnplus?.meta?.ultimate_subscription) {
+    console.log('⚠️  Ultimate subscription not enabled');
+  }
+}
+
+debugEspnAuth().catch(console.error);
+"
+```
+
 For detailed information about token extraction and setup, see the main `debug/README.md` file.
