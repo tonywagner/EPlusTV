@@ -50,6 +50,24 @@ export const ESPNPlus: FC = async () => {
             </label>
           </fieldset>
         </div>
+        <div class="grid-container">
+          <div />
+          <fieldset>
+            <label>
+              ESPN Ultimate?&nbsp;&nbsp;
+              <input
+                hx-put={`/providers/espnplus/toggle-ultimate`}
+                hx-trigger="change"
+                name="espnplus-ultimate-enabled"
+                hx-target="#espnplus-body"
+                type="checkbox"
+                role="switch"
+                checked={meta.ultimate_subscription ? true : false}
+                data-enabled={meta.ultimate_subscription ? 'true' : 'false'}
+              />
+            </label>
+          </fieldset>
+        </div>
         <div class="grid">
           <details>
             <summary>
