@@ -116,6 +116,7 @@ export interface IEspnPlusMeta {
   hide_studio?: boolean;
   zip_code?: string;
   in_market_teams?: string;
+  ultimate_subscription?: boolean;
 }
 
 export interface IEspnMeta {
@@ -358,6 +359,7 @@ const parseCategories = event => {
 
 const parseAirings = async events => {
   const useLinear = await usesLinear();
+  const ultimateEnabled = await isEnabled('ultimate');
 
   const [now, endSchedule] = normalTimeRange();
 
@@ -372,7 +374,15 @@ const parseAirings = async events => {
     const entryExists = await db.entries.findOneAsync<IEntry>({id: event.id});
 
     if (!entryExists) {
-      const isLinear = useLinear && event.network?.id && LINEAR_NETWORKS.some(n => n === event.network?.id);
+      // Check if this is a linear event - either global linear is enabled OR Ultimate subscription allows linear access
+      const isLinearNetwork = event.network?.id && LINEAR_NETWORKS.some(n => n === event.network?.id);
+      const isLinear = isLinearNetwork && (useLinear || ultimateEnabled);
+
+      if (isLinear && ultimateEnabled && !useLinear) {
+        console.log(
+          `Processing linear event via ESPN Ultimate: ${event.name} on ${event.network?.name || event.network?.id}`,
+        );
+      }
 
       if (!isLinear && plusMeta?.hide_studio && event.program?.isStudio) {
         continue;
@@ -435,6 +445,8 @@ const isEnabled = async (which?: string): Promise<boolean> => {
     return espnPlusEnabled;
   } else if (which === 'ppv') {
     return (plusMeta?.use_ppv ? true : false) && espnPlusEnabled;
+  } else if (which === 'ultimate') {
+    return (plusMeta?.ultimate_subscription ? true : false) && espnPlusEnabled;
   } else if (which === 'espn3') {
     return (linearMeta?.espn3 ? true : false) && espnLinearEnabled;
   } else if (which === 'espn3isp') {
@@ -487,6 +499,7 @@ class EspnHandler {
         meta: {
           hide_studio: false,
           in_market_teams: '',
+          ultimate_subscription: false,
           use_ppv: useEspnPpv,
           zip_code: '',
         },
@@ -621,14 +634,16 @@ class EspnHandler {
 
   public refreshTokens = async () => {
     const espnPlusEnabled = await isEnabled('plus');
+    const ultimateEnabled = await isEnabled('ultimate');
 
-    if (espnPlusEnabled) {
+    if (espnPlusEnabled || ultimateEnabled) {
       await this.updatePlusTokens();
     }
 
     const espnLinearEnabled = await isEnabled('linear');
 
-    if (espnLinearEnabled && willAdobeTokenExpire(this.adobe_auth)) {
+    // Only refresh Adobe tokens if using traditional linear (not Ultimate)
+    if (espnLinearEnabled && !ultimateEnabled && willAdobeTokenExpire(this.adobe_auth)) {
       console.log('Refreshing TV Provider token (ESPN)');
       await this.refreshProviderToken();
     }
@@ -638,6 +653,7 @@ class EspnHandler {
     const espnPlusEnabled = await isEnabled('plus');
     const espnPpvEnabled = await isEnabled('ppv');
     const espnLinearEnabled = await isEnabled('linear');
+    const ultimateEnabled = await isEnabled('ultimate');
     const secPlusEnabled = await isEnabled('sec_plus');
     const espn3Enabled = await isEnabled('espn3');
     const accnxEnabled = await isEnabled('accnx');
@@ -645,7 +661,7 @@ class EspnHandler {
     const {linear_channels} = await db.providers.findOneAsync<IProvider>({name: 'espn'});
 
     const isChannelEnabled = (channelId: string): boolean =>
-      espnLinearEnabled && linear_channels.some(c => c.id === channelId && c.enabled);
+      (espnLinearEnabled || ultimateEnabled) && linear_channels.some(c => c.id === channelId && c.enabled);
 
     let entries = [];
 
@@ -657,8 +673,8 @@ class EspnHandler {
         entries = [...entries, ...liveEntries];
       }
 
-      if (espnLinearEnabled) {
-        console.log('Looking for ESPN events');
+      if (espnLinearEnabled || ultimateEnabled) {
+        console.log('Looking for ESPN linear events...');
       }
 
       if (isChannelEnabled('espn1')) {
@@ -770,8 +786,11 @@ class EspnHandler {
 
   public getEventData = async (eventId: string): Promise<TChannelPlaybackInfo> => {
     const espnPlusEnabled = await isEnabled('plus');
-    espnPlusEnabled && (await this.getBamAccessToken());
-    espnPlusEnabled && (await this.getGraphQlApiKey());
+    const ultimateEnabled = await isEnabled('ultimate');
+
+    // Ensure BAM tokens are available for ESPN+ or Ultimate subscribers
+    (espnPlusEnabled || ultimateEnabled) && (await this.getBamAccessToken());
+    (espnPlusEnabled || ultimateEnabled) && (await this.getGraphQlApiKey());
 
     try {
       const {data: scenarios} = await instance.get('https://watch.graph.api.espn.com/api', {
@@ -792,12 +811,21 @@ class EspnHandler {
       let headers: IHeaders = {};
       let uri: string;
 
+      // Check if this is a linear channel that should use BAM auth for Ultimate subscribers
+      const isLinearChannel =
+        scenarios?.data?.airing?.network?.id && LINEAR_NETWORKS.some(n => n === scenarios?.data?.airing?.network?.id);
+
       if (scenarios?.data?.airing?.source?.authorizationType === 'SHIELD') {
         // console.log('Scenario: ', scenarios?.data?.airing);
         isEspnPlus = false;
       }
 
-      if (isEspnPlus) {
+      // Use BAM authentication for ESPN+ content OR Ultimate subscribers accessing linear channels
+      if (isEspnPlus || (ultimateEnabled && isLinearChannel)) {
+        if (ultimateEnabled && isLinearChannel) {
+          console.log(`Using ESPN Ultimate authentication for linear channel: ${scenarios?.data?.airing?.network?.id}`);
+        }
+
         const {data} = await axios.get(scenarioUrl, {
           headers: {
             Accept: 'application/vnd.media-service+json; version=2',
