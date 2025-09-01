@@ -78,6 +78,7 @@ interface IFoxMeta {
   only4k?: boolean;
   uhd?: boolean;
   dtc_events?: boolean;
+  local_station_call_sign?: string;
 }
 
 const EPG_API_KEY = [
@@ -212,11 +213,11 @@ const willAuthTokenExpire = (token: IAdobeAuthFox): boolean =>
 
 const checkEventNetwork = (entitlements, event: IFoxEvent): boolean => {
   if (event.network) {
-	for(let i=0; i<entitlements.length; i++) {
-	  if (entitlements[i].split('-')[0] == event.network) {
-	    return true;
+	  for (let i=0; i<entitlements.length; i++) {
+	    if ( (entitlements[i].split('-')[0] == event.network) || ((event.network == 'fox') && entitlements.includes('foxSports')) ) {
+	      return true;
+	    }
 	  }
-	}
   }
 
   return false;
@@ -275,6 +276,7 @@ class FoxHandler {
         meta: {
           only4k: useFoxOnly4k,
           uhd: getMaxRes(process.env.MAX_RESOLUTION) === 'UHD/HDR',
+          local_station_call_sign: '',
         },
         name: 'foxsports',
         tokens: data,
@@ -455,6 +457,38 @@ class FoxHandler {
       await this.getAppConfig();
     }
 
+    // get local station call sign
+    let local_station_call_sign_parameter = '';
+    try {
+      const {meta} = await db.providers.findOneAsync<IProvider<any, IFoxMeta>>({name: 'foxsports'});
+      if ( !meta.local_station_call_sign || (meta.local_station_call_sign == '') ) {
+        console.log('Fetching local FOX station call sign');
+        let local_station_call_sign = 'none';
+        const {data} = await axios.get(
+          'https://api-sps.foxsports.com/locator/v1/location',
+          {
+            headers: {
+              'User-Agent': userAgent,
+              'x-api-key': EPG_API_KEY,
+            },
+          },
+        );
+
+        if ( data.data.results[0].local_station_call_sign ) {
+          local_station_call_sign = data.data.results[0].local_station_call_sign;
+          console.log('Found local FOX station call sign ' + local_station_call_sign);
+          local_station_call_sign_parameter = '%2C' +  local_station_call_sign;
+        } else {
+          console.log('No local FOX station call sign found');
+        }
+        await db.providers.updateAsync({name: 'foxsports'}, {$set: {'meta.local_station_call_sign': local_station_call_sign}});
+      } else if ( (meta.local_station_call_sign != 'none') ) {
+        local_station_call_sign_parameter = '%2C' +  meta.local_station_call_sign;
+      }
+    } catch (e) {
+      console.log(e);
+    }
+
     const useLinear = await usesLinear();
 
     const events: IFoxEvent[] = [];
@@ -470,7 +504,7 @@ class FoxHandler {
 
       for (let page = 1; page <= pages; page++) {
         const {data} = await axios.get<IFoxEventsData>(
-          `https://api.fox.com/fs/product/curated/v1/sporting/keystone/detail/by_filters?callsign=BTN%2CBTN-DIGITAL%2CFOX%2CFOX-DIGITAL%2CFOXDEP%2CFOXDEP-DIGITAL%2CFS1%2CFS1-DIGITAL%2CFS2%2CFS2-DIGITAL%2CFSP&end_date=${endTime}&page=${page}&size=${max_items_per_page}&start_date=${startTime}&video_type=listing`,
+          `https://api.fox.com/fs/product/curated/v1/sporting/keystone/detail/by_filters?callsign=BTN%2CBTN-DIGITAL%2CFOX%2CFOX-DIGITAL%2CFOXDEP%2CFOXDEP-DIGITAL%2CFS1%2CFS1-DIGITAL%2CFS2%2CFS2-DIGITAL%2CFSP${local_station_call_sign_parameter}&end_date=${endTime}&page=${page}&size=${max_items_per_page}&start_date=${startTime}&video_type=listing`,
           {
             headers: {
               'User-Agent': userAgent,
