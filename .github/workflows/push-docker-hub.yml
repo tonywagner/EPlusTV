@@ -29,12 +29,20 @@ jobs:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
       -
+        name: Login to new DockerHub
+        if: github.event_name != 'pull_request'
+        uses: docker/login-action@v1
+        with:
+          username: ${{ secrets.NEW_DOCKERHUB_USERNAME }}
+          password: ${{ secrets.NEW_DOCKERHUB_TOKEN }}
+      -
         name: Docker meta
         id: meta
         uses: docker/metadata-action@v3
         with:
           images: |
-            m0ngr31/eplustv
+            ${{ secrets.DOCKERHUB_USERNAME }}/eplustv
+            ${{ secrets.NEW_DOCKERHUB_USERNAME }}/eplustv
           tags: |
             type=raw,value=latest,enable=${{ endsWith(github.ref, 'master') }}
             type=ref,event=tag
@@ -53,4 +61,11 @@ jobs:
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_PASSWORD }}
-          repository: m0ngr31/eplustv
+          repository: ${{ secrets.DOCKERHUB_USERNAME }}/eplustv
+      -
+        name: Update new repo description
+        uses: peter-evans/dockerhub-description@v2
+        with:
+          username: ${{ secrets.NEW_DOCKERHUB_USERNAME }}
+          password: ${{ secrets.NEW_DOCKERHUB_PASSWORD }}
+          repository: ${{ secrets.NEW_DOCKERHUB_USERNAME }}/eplustv
