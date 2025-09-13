@@ -13,6 +13,7 @@ export const FoxSports: FC = async () => {
   const channels = fox?.linear_channels || [];
   const only4k = fox?.meta?.only4k;
   const uhd = fox?.meta?.uhd;
+  const hide_studio = fox?.meta?.hide_studio;
 
   return (
     <div>
@@ -35,7 +36,7 @@ export const FoxSports: FC = async () => {
             </label>
           </fieldset>
         </div>
-        <div class="grid-container">
+        <div class="grid">
           <fieldset>
             <label>
               <input
@@ -53,7 +54,6 @@ export const FoxSports: FC = async () => {
           </fieldset>
           <fieldset>
             <label>
-              Only grab 4K events?&nbsp;&nbsp;
               <input
                 hx-put={`/providers/fox/toggle-4k-only`}
                 hx-trigger="change"
@@ -64,6 +64,22 @@ export const FoxSports: FC = async () => {
                 checked={only4k ? true : false}
                 data-enabled={only4k ? 'true' : 'false'}
               />
+              Only grab 4K events?
+            </label>
+          </fieldset>
+          <fieldset>
+            <label>
+              <input
+                hx-put={`/providers/fox/toggle-studio`}
+                hx-trigger="change"
+                hx-target="#fox-body"
+                name="fox-hide-studio"
+                type="checkbox"
+                role="switch"
+                checked={hide_studio ? true : false}
+                data-enabled={hide_studio ? 'true' : 'false'}
+              />
+              Hide studio shows?
             </label>
           </fieldset>
         </div>

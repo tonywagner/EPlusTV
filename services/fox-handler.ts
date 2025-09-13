@@ -56,7 +56,7 @@ interface IFoxEvent {
   start_time: string;
   end_time: string;
   network: string;
-  streamTypes: string[];
+  stream_types: string[];
   images: {
     logo?: string;
     series_detail?: string;
@@ -79,6 +79,7 @@ interface IFoxMeta {
   uhd?: boolean;
   dtc_events?: boolean;
   local_station_call_sign?: string;
+  hide_studio?: boolean;
 }
 
 const EPG_API_KEY = [
@@ -139,7 +140,7 @@ const parseCategories = (event: IFoxEvent) => {
     categories.push(event.sport_uri);
   }
 
-  if (event.streamTypes?.find(resolution => resolution === 'HDR' || resolution === 'SDR') || event.isUHD) {
+  if (event.stream_types?.find(resolution => resolution === 'HDR' || resolution === 'SDR') || event.isUHD) {
     categories.push('4K');
   }
 
@@ -174,6 +175,12 @@ const parseAirings = async (events: IFoxEvent[]) => {
       const categories = parseCategories(event);
 
       if (meta.only4k && !_.some(categories, category => category === '4K')) {
+        continue;
+      }
+
+      const studio_regex = /Sports (Commentary|Highlights|Magazine|talk)/i;
+      const isStudio = categories.find(item => item.match(studio_regex));
+      if (!isLinear && meta?.hide_studio && isStudio) {
         continue;
       }
 
@@ -277,6 +284,7 @@ class FoxHandler {
           only4k: useFoxOnly4k,
           uhd: getMaxRes(process.env.MAX_RESOLUTION) === 'UHD/HDR',
           local_station_call_sign: '',
+          hide_studio: false,
         },
         name: 'foxsports',
         tokens: data,
@@ -462,7 +470,7 @@ class FoxHandler {
     try {
       const {meta} = await db.providers.findOneAsync<IProvider<any, IFoxMeta>>({name: 'foxsports'});
       if ( !meta.local_station_call_sign || (meta.local_station_call_sign == '') ) {
-        console.log('Fetching local FOX station call sign');
+        console.log('FOX Sports detecting local FOX call sign to pull flagship events');
         let local_station_call_sign = 'none';
         const {data} = await axios.get(
           'https://api-sps.foxsports.com/locator/v1/location',
@@ -476,10 +484,10 @@ class FoxHandler {
 
         if ( data.data.results[0].local_station_call_sign ) {
           local_station_call_sign = data.data.results[0].local_station_call_sign;
-          console.log('Found local FOX station call sign ' + local_station_call_sign);
+          console.log('FOX Sports found local FOX call sign ' + local_station_call_sign);
           local_station_call_sign_parameter = '%2C' +  local_station_call_sign;
         } else {
-          console.log('No local FOX station call sign found');
+          console.log('FOX Sports could not find a local FOX call sign');
         }
         await db.providers.updateAsync({name: 'foxsports'}, {$set: {'meta.local_station_call_sign': local_station_call_sign}});
       } else if ( (meta.local_station_call_sign != 'none') ) {
