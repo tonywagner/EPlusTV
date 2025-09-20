@@ -117,6 +117,8 @@ const EPG_API_KEY = [
   '3',
 ].join('');
 
+const network_entitlement_map = { fox: 'foxSports', btn: 'btn-btn2go', fsp: 'fspl' };
+
 const foxConfigPath = path.join(configPath, 'fox_tokens.json');
 
 const getMaxRes = (res: string) => {
@@ -219,12 +221,8 @@ const willAuthTokenExpire = (token: IAdobeAuthFox): boolean =>
   new Date().valueOf() + 3600 * 1000 * 24 > (token?.tokenExpiration || 0);
 
 const checkEventNetwork = (entitlements, event: IFoxEvent): boolean => {
-  if (event.network) {
-	  for (let i=0; i<entitlements.length; i++) {
-	    if ( (entitlements[i].split('-')[0] == event.network) || ((event.network == 'fox') && entitlements.includes('foxSports')) ) {
-	      return true;
-	    }
-	  }
+  if ( event.network && (entitlements.includes(event.network) || (network_entitlement_map[event.network] && entitlements.includes(network_entitlement_map[event.network]))) ) {
+    return true;
   }
 
   return false;
@@ -275,9 +273,15 @@ class FoxHandler {
           },
           {
             enabled: true,
-            id: 'fox-soccer-plus',
+            id: 'fsp',
             name: 'FOX Soccer Plus',
             tmsId: '66880',
+          },
+          {
+            enabled: true,
+            id: 'foxdep',
+            name: 'FOX Deportes',
+            tmsId: '72189',
           },
         ],
         meta: {
@@ -583,7 +587,7 @@ class FoxHandler {
       this.entitlements = [];
 
       _.forOwn(data.entitlements, (_val, key) => {
-        if (/^[a-z]/.test(key) && key !== 'foxdep') {
+        if (/^[a-z]/.test(key)) {
           this.entitlements.push(key);
         }
       });

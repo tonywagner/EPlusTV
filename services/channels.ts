@@ -95,12 +95,20 @@ export const CHANNELS = {
         tvgName: 'BIG10HD',
       },
       13: {
-        checkChannelEnabled: () => checkChannelEnabled('foxsports', 'fox-soccer-plus'),
-        id: 'fox-soccer-plus',
+        checkChannelEnabled: () => checkChannelEnabled('foxsports', 'fsp'),
+        id: 'fsp',
         logo: 'https://tmsimg.fancybits.co/assets/s66880_ll_h15_aa.png?w=360&h=270',
         name: 'FOX Soccer Plus',
         stationId: '66880',
         tvgName: 'FSCPLHD',
+      },
+      14: {
+        checkChannelEnabled: () => checkChannelEnabled('foxsports', 'foxdep'),
+        id: 'foxdep',
+        logo: 'https://tmsimg.fancybits.co/assets/s15377_ll_h15_aa.png?w=360&h=270',
+        name: 'FOX Deportes',
+        stationId: '72189',
+        tvgName: 'FXDEPHD',
       },
       20: {
         checkChannelEnabled: () => checkChannelEnabled('paramount', 'cbssportshq'),

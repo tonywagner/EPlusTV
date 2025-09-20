@@ -2,7 +2,7 @@
   <img src="https://i.imgur.com/FIGZdR3.png">
 </p>
 
-Current version: **4.10.6**
+Current version: **4.10.7**
 
 # About
 This takes programming from various providers and transforms it into a "live TV" experience with virtual linear channels. It will discover what is on, and generate a schedule of channels that will give you M3U and XMLTV files that you can import into something like [Jellyfin](https://jellyfin.org) or [Channels](https://getchannels.com).
@@ -98,6 +98,7 @@ Some events are on linear channels and some aren't. If you use dedicated linear 
 | FS2 |
 | B1G Network |
 | FOX Soccer Plus |
+| FOX Deportes |
 
 #### Gotham Sports
 
