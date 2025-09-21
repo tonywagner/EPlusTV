@@ -250,6 +250,7 @@ class FoxHandler {
         data.adobe_prelim_auth_token = this.adobe_prelim_auth_token;
       }
 
+      // see below for update/addition of Soccer Plus and Deportes linear channels
       await db.providers.insertAsync<IProvider<TFoxTokens, IFoxMeta>>({
         enabled: useFoxSports,
         linear_channels: [
@@ -270,18 +271,6 @@ class FoxHandler {
             id: 'btn',
             name: 'B1G Network',
             tmsId: '58321',
-          },
-          {
-            enabled: true,
-            id: 'fsp',
-            name: 'FOX Soccer Plus',
-            tmsId: '66880',
-          },
-          {
-            enabled: true,
-            id: 'foxdep',
-            name: 'FOX Deportes',
-            tmsId: '72189',
           },
         ],
         meta: {
@@ -309,7 +298,31 @@ class FoxHandler {
       console.log('Using MAX_RESOLUTION variable is no longer needed. Please use the UI going forward');
     }
 
-    const {enabled, meta} = await db.providers.findOneAsync<IProvider<TFoxTokens, IFoxMeta>>({name: 'foxsports'});
+    const {enabled, meta, linear_channels} = await db.providers.findOneAsync<IProvider>({name: 'foxsports'});
+	
+    // update/add Soccer Plus and Deportes, if necessary
+    if ( linear_channels.length <= 4 ) {
+      linear_channels[3] = {
+    	enabled: true,
+        id: 'fsp',
+        name: 'FOX Soccer Plus',
+        tmsId: '66880',
+      };
+      linear_channels.push({
+        enabled: true,
+        id: 'foxdep',
+        name: 'FOX Deportes',
+        tmsId: '72189',
+      });
+      await db.providers.updateAsync<IProvider<TFoxTokens>, any>(
+        {name: 'foxsports'},
+        {
+          $set: {
+            linear_channels: linear_channels,
+          },
+        },
+      );
+    }
 
     if (!enabled) {
       return;
