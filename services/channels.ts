@@ -95,8 +95,8 @@ export const CHANNELS = {
         tvgName: 'BIG10HD',
       },
       13: {
-        checkChannelEnabled: () => checkChannelEnabled('foxsports', 'fsp'),
-        id: 'fsp',
+        checkChannelEnabled: () => checkChannelEnabled('foxsports', 'fox-soccer-plus'),
+        id: 'fox-soccer-plus',
         logo: 'https://tmsimg.fancybits.co/assets/s66880_ll_h15_aa.png?w=360&h=270',
         name: 'FOX Soccer Plus',
         stationId: '66880',
