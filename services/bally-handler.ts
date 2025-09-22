@@ -332,7 +332,7 @@ class BallyHandler {
         const channelData = data.channels.find(c => c.uuid === channelId);
 
         if (channelData) {
-          return [channelData.stream_info.apple_tv.default_abr, {}];
+          return [channelData.stream_info.connected_tv.default_abr, {}];
         } else {
           throw new Error('Could not start playback');
         }

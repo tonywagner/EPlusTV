@@ -117,7 +117,7 @@ const EPG_API_KEY = [
   '3',
 ].join('');
 
-const network_entitlement_map = { fox: 'foxSports', btn: 'btn-btn2go', fsp: 'fspl' };
+const network_entitlement_map = { fox: 'foxSports', btn: 'btn-btn2go', 'fox-soccer-plus': 'fspl' };
 
 const foxConfigPath = path.join(configPath, 'fox_tokens.json');
 
@@ -304,7 +304,7 @@ class FoxHandler {
     if ( linear_channels.length <= 4 ) {
       linear_channels[3] = {
     	enabled: true,
-        id: 'fsp',
+        id: 'fox-soccer-plus',
         name: 'FOX Soccer Plus',
         tmsId: '66880',
       };
