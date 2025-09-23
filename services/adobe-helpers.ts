@@ -16,6 +16,13 @@ export interface IAdobeAuthFox {
   authn_expire: number;
 }
 
+export interface IAdobeAuthFoxOne {
+  accessToken: string;
+  tokenExpiration: number;
+  mvpd: string;
+  authn_expire: number;
+}
+
 export const createAdobeAuthHeader = (
   method = 'POST',
   path: string,
@@ -47,6 +54,20 @@ export const isAdobeTokenValid = (token?: IAdobeAuth): boolean => {
 };
 
 export const isAdobeFoxTokenValid = (token?: IAdobeAuthFox): boolean => {
+  if (!token) {
+    return false;
+  }
+
+  const now = new Date().valueOf();
+
+  try {
+    return now < token.authn_expire && now < token.tokenExpiration;
+  } catch (e) {
+    return false;
+  }
+};
+
+export const isAdobeFoxOneTokenValid = (token?: IAdobeAuthFoxOne): boolean => {
   if (!token) {
     return false;
   }

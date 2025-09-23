@@ -17,6 +17,7 @@ import {launchChannel} from './services/launch-channel';
 import {scheduleEntries} from './services/build-schedule';
 import {espnHandler} from './services/espn-handler';
 import {foxHandler} from './services/fox-handler';
+import {foxOneHandler} from './services/foxone-handler';
 import {mlbHandler} from './services/mlb-handler';
 import {b1gHandler} from './services/b1g-handler';
 import {floSportsHandler} from './services/flo-handler';
@@ -130,6 +131,7 @@ const schedule = async () => {
   await Promise.all([
     espnHandler.getSchedule(),
     foxHandler.getSchedule(),
+    foxOneHandler.getSchedule(),
     mlbHandler.getSchedule(),
     b1gHandler.getSchedule(),
     floSportsHandler.getSchedule(),
@@ -185,6 +187,7 @@ app.get('/', async c => {
               <ESPN />
               <ESPNPlus />
               <FloSports />
+              <FoxOne />
               <FoxSports />
               <Gotham />
               <Hudl />
@@ -588,6 +591,7 @@ process.on('SIGINT', shutDown);
   await Promise.all([
     espnHandler.initialize(),
     foxHandler.initialize(),
+    foxOneHandler.initialize(),
     mlbHandler.initialize(),
     b1gHandler.initialize(),
     floSportsHandler.initialize(),
@@ -614,6 +618,7 @@ process.on('SIGINT', shutDown);
   await Promise.all([
     espnHandler.refreshTokens(),
     foxHandler.refreshTokens(),
+    foxOneHandler.refreshTokens(),
     mlbHandler.refreshTokens(),
     b1gHandler.refreshTokens(),
     floSportsHandler.refreshTokens(),
@@ -669,6 +674,7 @@ setInterval(
     Promise.all([
       espnHandler.refreshTokens(),
       foxHandler.refreshTokens(),
+      foxOneHandler.refreshTokens(),
       mlbHandler.refreshTokens(),
       b1gHandler.refreshTokens(),
       floSportsHandler.refreshTokens(),

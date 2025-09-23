@@ -12,7 +12,11 @@ export const cbsSportsUserAgent = 'CBSSports/7.4.0-1739899507 (androidtv)';
 export const androidFoxUserAgent =
   'foxsports-androidtv/3.42.1 (Linux;Android 9.0.0;SHIELD Android TV) ExoPlayerLib/2.12.1';
 
-export const okHttpUserAgent = 'okhttp/4.11.0';
+export const androidFoxOneUserAgent =
+ // 'foxone-androidtv/1.1.0 (Linux; Android 12; en-us; onn. 4K Streaming Box Build/SGZ1.221127.063.A1.9885170);
+  'foxone-androidtv/1.1.0 (Android 12; en_US; sdk_google_atv64_arm64; Build/STT9.221129.002)';
+
+  export const okHttpUserAgent = 'okhttp/4.11.0';
 
 export const floSportsUserAgent =
   'Dalvik/2.1.0 (Linux; U; Android 9; sdk_google_atv_x86 Build/PSR1.180720.121) FloSports/2.11.0-2220530';

@@ -1,6 +1,6 @@
 import {FC} from 'hono/jsx';
 
-import {foxHandler} from '@/services/fox-handler';
+import {foxOneHandler} from '@/services/foxone-handler';
 
 interface ILogin {
   code?: string;
@@ -11,19 +11,19 @@ export const Login: FC<ILogin> = async ({code}) => {
   let shownCode = code;
 
   if (!shownCode) {
-    shownCode = await foxHandler.getAuthCode();
+    shownCode = await foxOneHandler.getAuthCode();
   }
 
   return (
-    <div hx-target="this" hx-swap="outerHTML" hx-trigger="every 5s" hx-get={`/providers/fox/tve-login/${shownCode}`}>
+    <div hx-target="this" hx-swap="outerHTML" hx-trigger="every 5s" hx-get={`/providers/foxone/tve-login/${shownCode}`}>
       <div class="grid-container">
         <div>
-          <h5>FOX Sports Login:</h5>
+          <h5>FOX One Login:</h5>
           <span>
             Open this link and follow instructions:
             <br />
-            <a href="https://go.foxsports.com" target="_blank">
-              https://go.foxsports.com
+            <a href="https://go.fox.com" target="_blank">
+              https://fox.com
             </a>
           </span>
           <h6>Code: {shownCode}</h6>

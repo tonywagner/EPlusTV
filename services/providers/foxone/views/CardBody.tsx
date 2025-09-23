@@ -1,16 +1,16 @@
 import {FC} from 'hono/jsx';
 
-import {TFoxTokens} from '@/services/fox-handler';
+import {TFoxOneTokens} from '@/services/foxone-handler';
 import {IProviderChannel} from '@/services/shared-interfaces';
 
-interface IFoxBodyProps {
+interface IFoxOneBodyProps {
   enabled: boolean;
-  tokens?: TFoxTokens;
+  tokens?: TFoxOneTokens;
   open?: boolean;
   channels: IProviderChannel[];
 }
 
-export const FoxBody: FC<IFoxBodyProps> = ({enabled, tokens, open, channels}) => {
+export const FoxOneBody: FC<IFoxOneBodyProps> = ({enabled, tokens, open, channels}) => {
   const parsedTokens = JSON.stringify(tokens, undefined, 2);
 
   if (!enabled) {
@@ -40,8 +40,8 @@ export const FoxBody: FC<IFoxBodyProps> = ({enabled, tokens, open, channels}) =>
         <summary>Tokens</summary>
         <div>
           <pre>{parsedTokens}</pre>
-          <form hx-put="/providers/fox/reauth" hx-trigger="submit">
-            <button id="fox-reauth">Re-Authenticate</button>
+          <form hx-put="/providers/foxone/reauth" hx-trigger="submit">
+            <button id="foxone-reauth">Re-Authenticate</button>
           </form>
         </div>
       </details>

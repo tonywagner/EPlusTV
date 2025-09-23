@@ -17,7 +17,7 @@ const createBaseUrlChunklist = (url: string, network: string): string => {
   const cleaned = url.replace(/\.m3u8.*$/, '');
   let filteredUrl: string[] | string = cleaned.split('/');
 
-  if (network === 'foxsports' && !url.includes('akamai')) {
+  if (network === 'foxsports' || network === 'foxone' && !url.includes('akamai')) {
     filteredUrl = filteredUrl.filter(seg => !seg.match(/=/));
   }
 
@@ -124,7 +124,7 @@ export class PlaylistHandler {
       }
 
       const realManifestUrl = request.res.responseUrl;
-      const urlParams = this.network === 'foxsports' ? new URL(realManifestUrl).search : '';
+      const urlParams = this.network === 'foxsports' || this.network === 'foxone' ? new URL(realManifestUrl).search : '';
 
       const playlist = HLS.parse(manifest);
 
@@ -154,7 +154,7 @@ export class PlaylistHandler {
             updatedManifest = updatedManifest.replace(track[1], `${this.baseProxyUrl}${chunklistName}.m3u8`);
           }
         });
-      } else if (this.network !== 'foxsports') {
+      } else if (this.network !== 'foxsports' || this.network !== 'foxone') {
         const audioTracks = [...manifest.matchAll(reAudioTrack)];
         audioTracks.forEach(track => {
           if (track && track[1]) {
