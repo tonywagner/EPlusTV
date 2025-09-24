@@ -3,6 +3,7 @@ import {FC} from 'hono/jsx';
 import {db} from '@/services/database';
 import {IProvider} from '@/services/shared-interfaces';
 import {TFoxOneTokens} from '@/services/foxone-handler';
+console.log('TFoxOneTokens', TFoxOneTokens);
 
 import {FoxOneBody} from './CardBody';
 
@@ -13,6 +14,7 @@ export const FoxOne: FC = async () => {
   const channels = foxone?.linear_channels || [];
   const only4k = foxone?.meta?.only4k;
   const uhd = foxone?.meta?.uhd;
+  const hide_studio = foxone?.meta?.hide_studio;
 
   return (
     <div>
@@ -66,6 +68,21 @@ export const FoxOne: FC = async () => {
               Only grab 4K events?
             </label>
           </fieldset>
+          <fieldset>
+            <label>
+              <input
+                hx-put={`/providers/foxone/toggle-studio`}
+                hx-trigger="change"
+                hx-target="#foxone-body"
+                name="foxone-hide-studio"
+                type="checkbox"
+                role="switch"
+                checked={hide_studio ? true : false}
+                data-enabled={hide_studio ? 'true' : 'false'}
+              />
+              Hide studio shows?
+            </label>
+          </fieldset>          
         </div>
         <div id="foxone-body" hx-swap="innerHTML">
           <FoxOneBody enabled={enabled} tokens={tokens} channels={channels} />
