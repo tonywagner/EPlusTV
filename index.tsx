@@ -225,7 +225,7 @@ app.post('/start-channel', async c => {
   const body = await c.req.parseBody();
   const startChannel = _.toNumber(body['start-channel']);
 
-  if (_.isNaN(startChannel) || startChannel < 1 || startChannel > 10000) {
+  if (_.isNaN(startChannel) || startChannel < 1) {
     return c.html(<Options />, 200, {
       'HX-Trigger': `{"HXToast":{"type":"error","body":"Starting channel must be a valid number"}}`,
     });

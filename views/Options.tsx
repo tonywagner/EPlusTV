@@ -43,7 +43,6 @@ export const Options: FC = async () => {
                 data-value={startChannel}
                 name="start-channel"
                 min={1}
-                max={10000}
                 required
               />
               <button type="submit" id="start-channel-button">
