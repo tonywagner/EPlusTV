@@ -57,7 +57,7 @@ export const FoxOne: FC = async () => {
                 hx-put={`/providers/foxone/toggle-4k-only`}
                 hx-trigger="change"
                 hx-target="#foxone-body"
-                name="fox-enabled-4k-only"
+                name="foxone-enabled-4k-only"
                 type="checkbox"
                 role="switch"
                 checked={only4k ? true : false}

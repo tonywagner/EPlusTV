@@ -69,6 +69,7 @@ import {Paramount} from './services/providers/paramount/views';
 import {FloSports} from './services/providers/flosports/views';
 import {MlbTv} from './services/providers/mlb/views';
 import {FoxSports} from './services/providers/fox/views';
+import {FoxOne} from './services/providers/foxone/views';
 import {B1G} from './services/providers/b1g/views';
 import {NFL} from './services/providers/nfl/views';
 import {ESPN} from './services/providers/espn/views';
