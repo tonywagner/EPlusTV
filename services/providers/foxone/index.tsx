@@ -26,7 +26,7 @@ const removeAndSchedule = async () => {
 
 foxone.put('/toggle', async c => {
   const body = await c.req.parseBody();
-  const enabled = body['fox-enabled'] === 'on';
+  const enabled = body['foxone-enabled'] === 'on';
 
   if (!enabled) {
     await db.providers.updateAsync<IProvider, any>({name: 'foxone'}, {$set: {enabled, tokens: {}}});
@@ -78,6 +78,31 @@ foxone.put('/toggle-uhd', async c => {
         meta: {
           ...meta,
           uhd,
+        },
+      },
+    },
+    {
+      returnUpdatedDocs: true,
+    },
+  );
+  const {enabled, tokens, linear_channels} = affectedDocuments as IProvider<TFoxOneTokens>;
+
+  return c.html(<FoxOneBody enabled={enabled} tokens={tokens} channels={linear_channels} />);
+});
+
+foxone.put('/toggle-studio', async c => {
+  const body = await c.req.parseBody();
+  const hide_studio = body['foxone-hide-studio'] === 'on';
+
+  const {meta} = await db.providers.findOneAsync<IProvider>({name: 'foxone'});
+
+  const {affectedDocuments} = await db.providers.updateAsync<IProvider<TFoxOneTokens>, any>(
+    {name: 'foxone'},
+    {
+      $set: {
+        meta: {
+          ...meta,
+          hide_studio,
         },
       },
     },

@@ -199,6 +199,13 @@ const parseAirings = async (events: IFoxOneEvent[]) => {
       if (meta.only4k && !_.some(categories, category => category === '4K')) {
         continue;
       }
+
+      const studio_regex = /Sports (Commentary|Highlights|Magazine|talk)/i;
+      const isStudio = categories.find(item => item.match(studio_regex));
+      if (!isLinear && meta?.hide_studio && isStudio) {
+        continue;
+      }
+
       const eventName = `${event.sport_uri === 'NFL' ? `${event.sport_uri} - ` : ''}${event.title}`;
 
       console.log('Adding event: ', eventName);
@@ -488,7 +495,7 @@ class FoxOneHandler {
             deviceWidth: 3840,
             maxRes: streamOrder[a],
             os: 'Android',
-            osv: '11.0.0',
+            osv: '12.0.0',
             streamId: eventId.replace('_dtc', ''),
             streamType: 'live',
           },
