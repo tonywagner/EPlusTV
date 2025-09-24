@@ -16,23 +16,43 @@ import {debug} from './debug';
 import {usesLinear} from './misc-db-service';
 
 interface IAppConfig {
-  api: {
-    content: {
-      watch: string;
+  network: {
+    identity: {
+      host: string; // this is the base url -- need to slice the trailing '/' off
+      entitlementsUrl: string; // was getentitlements -- may need to change
+      regcodeUrl: string; // was accountRegCode
+      registerUrl: string; // not sure if necessary yet
+      checkAdobeUrl: string; //was checkadobeauthn
+      refreshTokenUrl: string; // not sure if necessary yet
+      loginUrl: string;
     };
-    key: string;
     auth: {
-      accountRegCode: string;
-      checkadobeauthn: string;
-      getentitlements: string;
+      loginWebsiteUrl: string; // returns go.foxone.com -- DO NOT USE - should be go.fox.com
     };
-    profile: {
-      login: string;
-    };
+    apikey: string; // was key
   };
-  auth: {
-    displayActivationUrl: string;
+  playback: {
+    baseApiUrl: string; // was content.watch
+    liveAssetInfoUrl: string; // not sure if necessary yet -- adds v3.0/assetinfo/ to baseApiUrl
   };
+  // old API structure below -- comments above shoud be key to most
+  // api: {
+  //   content: {
+  //     watch: string;
+  //   };
+  //   key: string;
+  //   auth: {
+  //     accountRegCode: string;
+  //     checkadobeauthn: string;
+  //     getentitlements: string;
+  //   };
+  //   profile: {
+  //     login: string;
+  //   };
+  // };
+  // auth: {
+  //   displayActivationUrl: string;
+  // };
 }
 
 interface IAdobePrelimAuthToken {
@@ -83,41 +103,41 @@ interface IFoxOneMeta {
 }
 
 const EPG_API_KEY = [
-  'c',
-  'f',
-  '2',
-  '8',
-  '9',
-  'e',
-  '2',
-  '9',
-  '9',
-  'e',
-  'f',
-  'd',
-  'f',
-  'a',
-  '3',
-  '9',
-  'f',
-  'b',
-  '6',
-  '3',
-  '1',
-  '6',
-  'f',
-  '2',
+  'Y',
   '5',
-  '9',
-  'd',
+  's',
+  't',
   '1',
-  'd',
-  'e',
-  '9',
+  'H',
+  'o',
+  'L',
+  'L',
+  'O',
+  'J',
+  'F',
+  'l',
+  'H',
+  'S',
+  't',
+  'A',
   '3',
+  'a',
+  'l',
+  'O',
+  'L',
+  't',
+  'G',
+  'J',
+  'P',
+  'S',
+  '7',
+  'D',
+  'U',
+  'x',
+  'n',
 ].join('');
 
-const network_entitlement_map = { fox: 'foxOne', btn: 'btn-btn2go', 'fox-soccer-plus': 'fspl' };
+const network_entitlement_map = { fox: 'foxone', btn: 'btn-btn2go', 'fox-soccer-plus': 'fspl' };
 
 const foxOneConfigPath = path.join(configPath, 'foxone_tokens.json');
 
@@ -420,7 +440,7 @@ class FoxOneHandler {
       const {data: streamData} = await axios.get(data.url, {
         headers: {
           'User-Agent': androidFoxOneUserAgent,
-          'x-api-key': this.appConfig.api.key,
+          'x-api-key': this.fixedHost+this.appConfig.network.apikey,
         },
       });
 
@@ -476,7 +496,7 @@ class FoxOneHandler {
             headers: {
               'User-Agent': androidFoxOneUserAgent,
               authorization: this.adobe_auth.accessToken,
-              'x-api-key': this.appConfig.api.key,
+              'x-api-key': this.fixedHost+this.appConfig.network.apikey,
             },
           },
         );
@@ -598,6 +618,18 @@ class FoxOneHandler {
     }
   };
 
+  private fixedHost: string;
+
+
+  private async getAppConfigAndFixHost(): Promise<void> {
+    await this.getAppConfig();
+    if (this.appConfig?.network?.identity?.host) {
+      this.fixedHost = this.appConfig.network.identity.host.slice(0, -1);
+    } else {
+      throw new Error("App config or identity host is not available.");
+    }
+  }
+
   private getEntitlements = async (): Promise<void> => {
     try {
       if (!this.appConfig) {
@@ -605,19 +637,18 @@ class FoxOneHandler {
       }
 
       const {data} = await axios.get<any>(
-        `${this.appConfig.api.auth.getentitlements}?device_type=&device_id=${this.adobe_device_id}&resource=&requestor=`,
+        `${this.fixedHost}${this.appConfig.network.identity.entitlementsUrl}?device_type=&device_id=${this.adobe_device_id}&resource=&requestor=`,
         {
           headers: {
             'User-Agent': androidFoxOneUserAgent,
             authorization: this.adobe_auth.accessToken,
-            'x-api-key': this.appConfig.api.key,
+            'x-api-key': this.fixedHost+this.appConfig.network.apikey,
           },
         },
       );
 
       this.entitlements = [];
-
-      _.forOwn(data.entitlements, (_val, key) => {
+      _.forOwn(data.entitlementsUrl, (_val, key) => {
         if (/^[a-z]/.test(key)) {
           this.entitlements.push(key);
         }
@@ -634,14 +665,14 @@ class FoxOneHandler {
       }
 
       const {data} = await axios.post<IAdobePrelimAuthToken>(
-        this.appConfig.api.profile.login,
+        this.fixedHost+this.appConfig.network.identity.loginUrl,
         {
           deviceId: this.adobe_device_id,
         },
         {
           headers: {
             'User-Agent': androidFoxOneUserAgent,
-            'x-api-key': this.appConfig.api.key,
+            'x-api-key': this.fixedHost+this.appConfig.network.apikey,
             'x-signature-enabled': true,
           },
         },
@@ -667,7 +698,7 @@ class FoxOneHandler {
 
     try {
       const {data} = await axios.post(
-        this.appConfig.api.auth.accountRegCode,
+       this.fixedHost+this.appConfig.network.identity.regcodeUrl,
         {
           deviceID: this.adobe_device_id,
           isMvpd: true,
@@ -677,15 +708,15 @@ class FoxOneHandler {
           headers: {
             'User-Agent': androidFoxOneUserAgent,
             authorization: `Bearer ${this.adobe_prelim_auth_token.accessToken}`,
-            'x-api-key': this.appConfig.api.key,
+            'x-api-key': this.fixedHost+this.appConfig.network.apikey,
           },
         },
       );
-
+      console.log(data.code)
       return data.code;
     } catch (e) {
       console.error(e);
-      console.log('Could not start the authentication process for Fox Sports!');
+      console.log('Could not start the authentication process for Fox One!');
     }
   };
 
@@ -695,13 +726,13 @@ class FoxOneHandler {
         await this.getAppConfig();
       }
 
-      const {data} = await axios.get(`${this.appConfig.api.auth.checkadobeauthn}?device_id=${this.adobe_device_id}`, {
+      const {data} = await axios.get(`${this.fixedHost}${this.appConfig.network.identity.checkAdobeUrl}?device_id=${this.adobe_device_id}`, {
         headers: {
           'User-Agent': androidFoxOneUserAgent,
           authorization: !this.adobe_auth?.accessToken
             ? `Bearer ${this.adobe_prelim_auth_token.accessToken}`
             : this.adobe_auth.accessToken,
-          'x-api-key': this.appConfig.api.key,
+          'x-api-key': this.fixedHost+this.appConfig.network.apikey,
           'x-signature-enabled': true,
         },
       });
@@ -734,7 +765,7 @@ class FoxOneHandler {
   };
 
   private load = async (): Promise<void> => {
-    const {tokens} = await db.providers.findOneAsync<IProvider<TFoxOneTokens>>({name: 'foxsone'});
+    const {tokens} = await db.providers.findOneAsync<IProvider<TFoxOneTokens>>({name: 'foxone'});
     const {adobe_device_id, adobe_auth, adobe_prelim_auth_token} = tokens;
 
     this.adobe_device_id = adobe_device_id;

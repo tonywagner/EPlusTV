@@ -17,9 +17,9 @@ const createBaseUrlChunklist = (url: string, network: string): string => {
   const cleaned = url.replace(/\.m3u8.*$/, '');
   let filteredUrl: string[] | string = cleaned.split('/');
 
-  if (network === 'foxsports' || network === 'foxone' && !url.includes('akamai')) {
-    filteredUrl = filteredUrl.filter(seg => !seg.match(/=/));
-  }
+ if ((network === 'foxsports' || network === 'foxone') && !url.includes('akamai')) {
+  filteredUrl = filteredUrl.filter(seg => !seg.match(/=/));
+}
 
   filteredUrl = filteredUrl.join('/');
   return filteredUrl.substring(0, filteredUrl.lastIndexOf('/') + 1);
@@ -124,8 +124,16 @@ export class PlaylistHandler {
       }
 
       const realManifestUrl = request.res.responseUrl;
-      const urlParams = this.network === 'foxsports' || this.network === 'foxone' ? new URL(realManifestUrl).search : '';
 
+      let urlParams = '';
+      if (this.network === 'foxsports' || this.network === 'foxone') {
+      try {
+        urlParams = new URL(realManifestUrl).search;
+          } catch (error) {
+          console.error('Invalid URL provided:', error);
+        urlParams = ''; // Fallback to an empty string on error
+      }
+}
       const playlist = HLS.parse(manifest);
 
       /** Sort playlist so highest resolution is first in list (Emby workaround) */
@@ -154,7 +162,7 @@ export class PlaylistHandler {
             updatedManifest = updatedManifest.replace(track[1], `${this.baseProxyUrl}${chunklistName}.m3u8`);
           }
         });
-      } else if (this.network !== 'foxsports' || this.network !== 'foxone') {
+      } else if (this.network !== 'foxsports' && this.network !== 'foxone') {
         const audioTracks = [...manifest.matchAll(reAudioTrack)];
         audioTracks.forEach(track => {
           if (track && track[1]) {

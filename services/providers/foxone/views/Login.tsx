@@ -23,7 +23,7 @@ export const Login: FC<ILogin> = async ({code}) => {
             Open this link and follow instructions:
             <br />
             <a href="https://go.fox.com" target="_blank">
-              https://fox.com
+              https://go.fox.com
             </a>
           </span>
           <h6>Code: {shownCode}</h6>
