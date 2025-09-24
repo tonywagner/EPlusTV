@@ -67,7 +67,7 @@ export const FoxOne: FC = async () => {
             </label>
           </fieldset>
         </div>
-        <div id="fox-body" hx-swap="innerHTML">
+        <div id="foxone-body" hx-swap="innerHTML">
           <FoxOneBody enabled={enabled} tokens={tokens} channels={channels} />
         </div>
       </section>
