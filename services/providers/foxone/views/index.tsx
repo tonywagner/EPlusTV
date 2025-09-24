@@ -3,7 +3,6 @@ import {FC} from 'hono/jsx';
 import {db} from '@/services/database';
 import {IProvider} from '@/services/shared-interfaces';
 import {TFoxOneTokens} from '@/services/foxone-handler';
-console.log('TFoxOneTokens', TFoxOneTokens);
 
 import {FoxOneBody} from './CardBody';
 
@@ -15,6 +14,7 @@ export const FoxOne: FC = async () => {
   const only4k = foxone?.meta?.only4k;
   const uhd = foxone?.meta?.uhd;
   const hide_studio = foxone?.meta?.hide_studio;
+  console.log(`tokens: ${JSON.stringify(tokens)}`);
 
   return (
     <div>
