@@ -7,8 +7,7 @@ import {b1gHandler} from './b1g-handler';
 import {floSportsHandler} from './flo-handler';
 import {nflHandler} from './nfl-handler';
 import {mwHandler} from './mw-handler';
-import {nsicHandler} from './nsic-handler';
-import {nesnHandler} from './nesn-handler';
+import {hudlHandler} from './hudl-handler';
 import {cbsHandler} from './cbs-handler';
 import {IEntry, THeaderInfo} from './shared-interfaces';
 import {PlaylistHandler} from './playlist-handler';
@@ -91,11 +90,8 @@ const startChannelStream = async (channelId: string, appUrl: string) => {
         case 'bally':
           [url, headers] = await ballyHandler.getEventData(appStatus.channels[channelId].current);
           break;
-        case 'northern-sun':
-          [url, headers] = await nsicHandler.getEventData(appStatus.channels[channelId].current);
-          break;
-        case 'nesn':
-          [url, headers] = await nesnHandler.getEventData(appStatus.channels[channelId].current);
+        case 'hudl':
+          [url, headers] = await hudlHandler.getEventData(appStatus.channels[channelId].current);
           break;
         case 'cbssports':
           [url, headers] = await cbsHandler.getEventData(appStatus.channels[channelId].current);

@@ -182,22 +182,6 @@ export const CHANNELS = {
         stationId: '87024',
         tvgName: 'SNLA',
       },
-      50: {
-        checkChannelEnabled: () => checkChannelEnabled('nesn', 'NESN'),
-        id: 'NESN',
-        logo: 'https://tmsimg.fancybits.co/assets/s35038_ll_h15_ac.png?w=360&h=270',
-        name: 'New England Sports Network HD',
-        stationId: '35038',
-        tvgName: 'NESNHD',
-      },
-      51: {
-        checkChannelEnabled: () => checkChannelEnabled('nesn', 'NESN+'),
-        id: 'NESN+',
-        logo: 'https://tmsimg.fancybits.co/assets/s63198_ll_h15_ac.png?w=360&h=270',
-        name: 'New England Sports Network Plus HD',
-        stationId: '63516',
-        tvgName: 'NESNPLD',
-      },
       ...gothamHandler.getLinearChannels(),
       70: {
         checkChannelEnabled: async (): Promise<boolean> =>

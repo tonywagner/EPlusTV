@@ -1,7 +1,8 @@
 import _ from 'lodash';
 
 import {db} from './database';
-import {IMiscDbEntry} from './shared-interfaces';
+import {IMiscDbEntry, IProvider} from './shared-interfaces';
+import {removeEntriesProvider} from './build-schedule';
 
 const BUFFER_CHANNELS = 50;
 
@@ -118,6 +119,18 @@ export const initMiscDb = async (): Promise<void> => {
   }
   if (proxySegmentsEnv) {
     console.log('Using PROXY_SEGMENTS variable is no longer needed. Please use the UI going forward');
+  }
+  
+  // force disabling of removed providers and their schedules
+  const removedProviders = ['nesn', 'nsic'];
+  const removedSchedules = ['nesn', 'northern-sun'];
+  for (var i=0; i<removedProviders.length; i++) {
+    const {enabled} = await db.providers.findOneAsync<IProvider>({name: removedProviders[i]});
+    if (enabled) {
+      console.log('Force disabling removed provider ' + removedProviders[i]);
+      await db.providers.updateAsync<IProvider, any>({name: removedProviders[i]}, {$set: {enabled: false}});
+      await removeEntriesProvider(removedSchedules[i]);
+    }
   }
 };
 

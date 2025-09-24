@@ -34,7 +34,6 @@ const isBase64Uri = (url: string) => url.indexOf('base64') > -1 || url.startsWit
 
 const reTarget = /#EXT-X-TARGETDURATION:([0-9]+)/;
 const reAudioTrack = /#EXT-X-MEDIA:TYPE=AUDIO.*URI="([^"]+)"/gm;
-const reAudioTrackNesn = /#EXT-X-MEDIA.*TYPE=AUDIO.*URI="([^"]+)"/gm;
 const reMap = /#EXT-X-MAP:URI="([^"]+)"/gm;
 const reSubMap = /#EXT-X-MEDIA:TYPE=SUBTITLES.*URI="([^"]+)"/gm;
 const reSubMapVictory = /#EXT-X-MEDIA:.*TYPE=SUBTITLES.*URI="([^"]+)"/gm;
@@ -145,17 +144,7 @@ export class PlaylistHandler {
       const clonedManifest = updateVersion(HLS.stringify(playlist));
       let updatedManifest = clonedManifest;
 
-      if (this.network === 'nesn') {
-        const audioTracks = [...manifest.matchAll(reAudioTrackNesn)];
-        audioTracks.forEach(track => {
-          if (track && track[1]) {
-            const fullChunklistUrl = parseReplacementUrl(track[1], realManifestUrl);
-
-            const chunklistName = cacheLayer.getChunklistFromUrl(`${fullChunklistUrl}${urlParams}`);
-            updatedManifest = updatedManifest.replace(track[1], `${this.baseProxyUrl}${chunklistName}.m3u8`);
-          }
-        });
-      } else if (this.network === 'victory' || this.network === 'bally') {
+      if (this.network === 'victory' || this.network === 'bally') {
         const subTracks = [...manifest.matchAll(reSubMapVictory)];
         subTracks.forEach(track => {
           if (track && track[1]) {

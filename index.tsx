@@ -29,8 +29,7 @@ import {lovbHandler} from './services/lovb-handler';
 import {ballyHandler} from './services/bally-handler';
 import {wsnHandler} from './services/wsn-handler';
 import {nwslHandler} from './services/nwsl-handler';
-import {nsicHandler} from './services/nsic-handler';
-import {nesnHandler} from './services/nesn-handler';
+import {hudlHandler} from './services/hudl-handler';
 import {cbsHandler} from './services/cbs-handler';
 import {nhlHandler} from './services/nhltv-handler';
 import {victoryHandler} from './services/victory-handler';
@@ -62,12 +61,11 @@ import {Options} from './views/Options';
 
 import {CBSSports} from './services/providers/cbs-sports/views';
 import {MntWest} from './services/providers/mw/views';
-import {NorthernSun} from './services/providers/nsic/views';
+import {Hudl} from './services/providers/hudl/views';
 import {Paramount} from './services/providers/paramount/views';
 import {FloSports} from './services/providers/flosports/views';
 import {MlbTv} from './services/providers/mlb/views';
 import {FoxSports} from './services/providers/fox/views';
-import {Nesn} from './services/providers/nesn/views';
 import {B1G} from './services/providers/b1g/views';
 import {NFL} from './services/providers/nfl/views';
 import {ESPN} from './services/providers/espn/views';
@@ -136,12 +134,11 @@ const schedule = async () => {
     pwhlHandler.getSchedule(),
     lovbHandler.getSchedule(),
     ballyHandler.getSchedule(),
-    nsicHandler.getSchedule(),
+    hudlHandler.getSchedule(),
     nflHandler.getSchedule(),
     nwslHandler.getSchedule(),
     paramountHandler.getSchedule(),
     gothamHandler.getSchedule(),
-    nesnHandler.getSchedule(),
     cbsHandler.getSchedule(),
     nhlHandler.getSchedule(),
     victoryHandler.getSchedule(),
@@ -184,14 +181,13 @@ app.get('/', async c => {
               <FloSports />
               <FoxSports />
               <Gotham />
+              <Hudl />
               <KBO />
               <LOVB />
               <MlbTv />
               <MntWest />
-              <Nesn />
               <NHL />
               <NFL />
-              <NorthernSun />
               <Nwsl />
               <Outside />
               <Paramount />
@@ -591,7 +587,6 @@ process.on('SIGINT', shutDown);
     nwslHandler.initialize(),
     paramountHandler.initialize(),
     gothamHandler.initialize(),
-    nesnHandler.initialize(),
     cbsHandler.initialize(),
     victoryHandler.initialize(),
     nhlHandler.initialize(),
@@ -600,7 +595,7 @@ process.on('SIGINT', shutDown);
     pwhlHandler.initialize(),
     lovbHandler.initialize(),
     ballyHandler.initialize(),
-    nsicHandler.initialize(),
+    hudlHandler.initialize(),
     kboHandler.initialize(),
     outsideHandler.initialize(),
     wnbaHandler.initialize(),
@@ -616,7 +611,6 @@ process.on('SIGINT', shutDown);
     nwslHandler.refreshTokens(),
     paramountHandler.refreshTokens(),
     gothamHandler.refreshTokens(),
-    nesnHandler.refreshTokens(),
     cbsHandler.refreshTokens(),
     victoryHandler.refreshTokens(),
     nhlHandler.refreshTokens(),
@@ -672,7 +666,6 @@ setInterval(
       nwslHandler.refreshTokens(),
       paramountHandler.refreshTokens(),
       gothamHandler.refreshTokens(),
-      nesnHandler.refreshTokens(),
       cbsHandler.refreshTokens(),
       victoryHandler.refreshTokens(),
       nhlHandler.refreshTokens(),

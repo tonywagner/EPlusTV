@@ -2,7 +2,7 @@
   <img src="https://i.imgur.com/FIGZdR3.png">
 </p>
 
-Current version: **4.10.8**
+Current version: **4.11.0**
 
 # About
 This takes programming from various providers and transforms it into a "live TV" experience with virtual linear channels. It will discover what is on, and generate a schedule of channels that will give you M3U and XMLTV files that you can import into something like [Jellyfin](https://jellyfin.org) or [Channels](https://getchannels.com).
@@ -116,6 +116,10 @@ Will create dedicated linear channels if using dedicated linear channels, otherw
 | MSGSN2 | MSG Sportsnet 2 HD (If in your supported zone) |
 | YES | Yes Network (If in your supported zone) |
 
+#### Hudl
+
+Various small college conferences, available for free
+
 #### KBO
 
 Available for free
@@ -145,19 +149,6 @@ Available to login with MLB.tv credentials
 #### Mountain West
 
 Available for free
-
-#### NESN
-
-Available to login with NESN+ or TV Provider
-
-##### Linear Channels
-
-Will create dedicated linear channels if using dedicated linear channels, otherwise will schedule events normally
-
-| Network Name | Description |
-|---|---|
-| NESN | New England Sports Network HD |
-| NESN+ | New England Sports Network Plus HD |
 
 #### NHL.tv
 
@@ -189,10 +180,6 @@ If you have access to NFL RedZone, it will be scheduled. If dedicated linear cha
 | NFL Network | NFL+ or TV Provider access |
 | NFL RedZone | NFL+ Premium or TV Provider access |
 | NFL Channel | Free channel for all accounts |
-
-#### Northern Sun
-
-Available for free
 
 #### NWSL+
 
