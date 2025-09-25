@@ -447,7 +447,7 @@ class FoxOneHandler {
       const {data: streamData} = await axios.get(data.url, {
         headers: {
           'User-Agent': androidFoxOneUserAgent,
-          'x-api-key': this.fixedHost+this.appConfig.network.apikey,
+          'x-api-key': `${this.fixedHost}${this.appConfig.network.apikey}`,
         },
       });
 
@@ -503,7 +503,7 @@ class FoxOneHandler {
             headers: {
               'User-Agent': androidFoxOneUserAgent,
               authorization: this.adobe_auth.accessToken,
-              'x-api-key': this.fixedHost+this.appConfig.network.apikey,
+              'x-api-key': `${this.fixedHost}${this.appConfig.network.apikey}`,
             },
           },
         );
@@ -649,7 +649,7 @@ class FoxOneHandler {
           headers: {
             'User-Agent': androidFoxOneUserAgent,
             authorization: this.adobe_auth.accessToken,
-            'x-api-key': this.fixedHost+this.appConfig.network.apikey,
+            'x-api-key': `${this.fixedHost}${this.appConfig.network.apikey}`,
           },
         },
       );
@@ -672,14 +672,14 @@ class FoxOneHandler {
       }
 
       const {data} = await axios.post<IAdobePrelimAuthToken>(
-        this.fixedHost+this.appConfig.network.identity.loginUrl,
+        `${this.fixedHost}${this.appConfig.network.identity.loginUrl}`,
         {
           deviceId: this.adobe_device_id,
         },
         {
           headers: {
             'User-Agent': androidFoxOneUserAgent,
-            'x-api-key': this.fixedHost+this.appConfig.network.apikey,
+            'x-api-key': `${this.fixedHost}${this.appConfig.network.apikey}`,
             'x-signature-enabled': true,
           },
         },
@@ -705,7 +705,7 @@ class FoxOneHandler {
 
     try {
       const {data} = await axios.post(
-       this.fixedHost+this.appConfig.network.identity.regcodeUrl,
+       `${this.fixedHost}${this.appConfig.network.identity.regcodeUrl}`,
         {
           deviceID: this.adobe_device_id,
           isMvpd: true,
@@ -715,11 +715,13 @@ class FoxOneHandler {
           headers: {
             'User-Agent': androidFoxOneUserAgent,
             authorization: `Bearer ${this.adobe_prelim_auth_token.accessToken}`,
-            'x-api-key': this.fixedHost+this.appConfig.network.apikey,
+            'x-api-key': `${this.fixedHost}${this.appConfig.network.apikey}`,
           },
         },
       );
       console.log(data.code)
+      console.log(this.adobe_prelim_auth_token.accessToken)
+      console.log(`${this.fixedHost}${this.appConfig.network.apikey}`)
       return data.code;
     } catch (e) {
       console.error(e);
@@ -739,7 +741,7 @@ class FoxOneHandler {
           authorization: !this.adobe_auth?.accessToken
             ? `Bearer ${this.adobe_prelim_auth_token.accessToken}`
             : this.adobe_auth.accessToken,
-          'x-api-key': this.fixedHost+this.appConfig.network.apikey,
+          'x-api-key': `${this.fixedHost}${this.appConfig.network.apikey}`,
           'x-signature-enabled': true,
         },
       });
