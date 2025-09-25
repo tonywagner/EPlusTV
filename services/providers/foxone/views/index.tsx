@@ -14,8 +14,7 @@ export const FoxOne: FC = async () => {
   const only4k = foxone?.meta?.only4k;
   const uhd = foxone?.meta?.uhd;
   const hide_studio = foxone?.meta?.hide_studio;
-  console.log(`tokens: ${JSON.stringify(tokens)}`);
-
+  
   return (
     <div>
       <section class="overflow-auto provider-section">

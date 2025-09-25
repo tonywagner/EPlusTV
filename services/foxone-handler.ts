@@ -655,7 +655,7 @@ class FoxOneHandler {
       );
 
       this.entitlements = [];
-      _.forOwn(data.entitlementsUrl, (_val, key) => {
+      _.forOwn(data.entitlements, (_val, key) => {
         if (/^[a-z]/.test(key)) {
           this.entitlements.push(key);
         }
