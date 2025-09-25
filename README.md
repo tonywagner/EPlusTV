@@ -2,7 +2,7 @@
   <img src="https://i.imgur.com/FIGZdR3.png">
 </p>
 
-Current version: **4.11.2**
+Current version: **4.12.0**
 
 # About
 This takes programming from various providers and transforms it into a "live TV" experience with virtual linear channels. It will discover what is on, and generate a schedule of channels that will give you M3U and XMLTV files that you can import into something like [Jellyfin](https://jellyfin.org) or [Channels](https://getchannels.com).
@@ -121,6 +121,10 @@ Will create dedicated linear channels if using dedicated linear channels, otherw
 Various small college conferences, available for free
 
 #### KBO
+
+Available for free
+
+#### KSL Sports
 
 Available for free
 

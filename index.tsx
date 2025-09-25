@@ -34,6 +34,7 @@ import {cbsHandler} from './services/cbs-handler';
 import {nhlHandler} from './services/nhltv-handler';
 import {victoryHandler} from './services/victory-handler';
 import {kboHandler} from './services/kbo-handler';
+import {kslHandler} from './services/ksl-handler';
 import {outsideHandler} from './services/outside-handler';
 import {wnbaHandler} from './services/wnba-handler';
 import {
@@ -79,6 +80,7 @@ import {Nwsl} from './services/providers/nwsl/views';
 import {NHL} from './services/providers/nhl-tv/views';
 import {Victory} from './services/providers/victory/views';
 import {KBO} from './services/providers/kbo/views';
+import {KSL} from './services/providers/ksl/views';
 import {Outside} from './services/providers/outside/views';
 import {WNBA} from './services/providers/wnba/views';
 
@@ -143,6 +145,7 @@ const schedule = async () => {
     nhlHandler.getSchedule(),
     victoryHandler.getSchedule(),
     kboHandler.getSchedule(),
+    kslHandler.getSchedule(),
     outsideHandler.getSchedule(),
     wnbaHandler.getSchedule(),
   ]);
@@ -183,6 +186,7 @@ app.get('/', async c => {
               <Gotham />
               <Hudl />
               <KBO />
+              <KSL />
               <LOVB />
               <MlbTv />
               <MntWest />
@@ -597,6 +601,7 @@ process.on('SIGINT', shutDown);
     ballyHandler.initialize(),
     hudlHandler.initialize(),
     kboHandler.initialize(),
+    kslHandler.initialize(),
     outsideHandler.initialize(),
     wnbaHandler.initialize(),
   ]);

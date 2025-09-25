@@ -22,6 +22,7 @@ import {lovbHandler} from './lovb-handler';
 import {nhlHandler} from './nhltv-handler';
 import {victoryHandler} from './victory-handler';
 import {kboHandler} from './kbo-handler';
+import {kslHandler} from './ksl-handler';
 import {nwslHandler} from './nwsl-handler';
 import {outsideHandler} from './outside-handler';
 import {wnbaHandler} from './wnba-handler';
@@ -98,6 +99,9 @@ const startChannelStream = async (channelId: string, appUrl: string) => {
           break;
         case 'kbo':
           [url, headers] = await kboHandler.getEventData(appStatus.channels[channelId].current);
+          break;
+        case 'ksl':
+          [url, headers] = await kslHandler.getEventData(appStatus.channels[channelId].current);
           break;
         case 'outside':
           [url, headers] = await outsideHandler.getEventData(appStatus.channels[channelId].current);
