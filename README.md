@@ -2,7 +2,7 @@
   <img src="https://i.imgur.com/FIGZdR3.png">
 </p>
 
-Current version: **4.12.0**
+Current version: **4.13.0**
 
 # About
 This takes programming from various providers and transforms it into a "live TV" experience with virtual linear channels. It will discover what is on, and generate a schedule of channels that will give you M3U and XMLTV files that you can import into something like [Jellyfin](https://jellyfin.org) or [Channels](https://getchannels.com).
@@ -235,6 +235,10 @@ Available for free - only linear channel
 | Network Name | Description |
 |---|---|
 | WSN | Women's Sports Network |
+
+#### Zeam Live Events
+
+Available for free
 
 ## Volumes
 | Volume Name | Description | Required? |

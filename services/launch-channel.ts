@@ -23,6 +23,7 @@ import {nhlHandler} from './nhltv-handler';
 import {victoryHandler} from './victory-handler';
 import {kboHandler} from './kbo-handler';
 import {kslHandler} from './ksl-handler';
+import {zeamHandler} from './zeam-handler';
 import {nwslHandler} from './nwsl-handler';
 import {outsideHandler} from './outside-handler';
 import {wnbaHandler} from './wnba-handler';
@@ -102,6 +103,9 @@ const startChannelStream = async (channelId: string, appUrl: string) => {
           break;
         case 'ksl':
           [url, headers] = await kslHandler.getEventData(appStatus.channels[channelId].current);
+          break;
+        case 'zeam':
+          [url, headers] = await zeamHandler.getEventData(appStatus.channels[channelId].current);
           break;
         case 'outside':
           [url, headers] = await outsideHandler.getEventData(appStatus.channels[channelId].current);

@@ -21,6 +21,7 @@ import {nhl} from './nhl-tv';
 import {victory} from './victory';
 import {kbo} from './kbo';
 import {ksl} from './ksl';
+import {zeam} from './zeam';
 import {outside} from './outside';
 import {wnba} from './wnba';
 
@@ -47,5 +48,6 @@ providers.route('/', espnplus);
 providers.route('/', gotham);
 providers.route('/', kbo);
 providers.route('/', ksl);
+providers.route('/', zeam);
 providers.route('/', outside);
 providers.route('/', wnba);

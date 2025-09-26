@@ -35,6 +35,7 @@ import {nhlHandler} from './services/nhltv-handler';
 import {victoryHandler} from './services/victory-handler';
 import {kboHandler} from './services/kbo-handler';
 import {kslHandler} from './services/ksl-handler';
+import {zeamHandler} from './services/zeam-handler';
 import {outsideHandler} from './services/outside-handler';
 import {wnbaHandler} from './services/wnba-handler';
 import {
@@ -81,6 +82,7 @@ import {NHL} from './services/providers/nhl-tv/views';
 import {Victory} from './services/providers/victory/views';
 import {KBO} from './services/providers/kbo/views';
 import {KSL} from './services/providers/ksl/views';
+import {Zeam} from './services/providers/zeam/views';
 import {Outside} from './services/providers/outside/views';
 import {WNBA} from './services/providers/wnba/views';
 
@@ -146,6 +148,7 @@ const schedule = async () => {
     victoryHandler.getSchedule(),
     kboHandler.getSchedule(),
     kslHandler.getSchedule(),
+    zeamHandler.getSchedule(),
     outsideHandler.getSchedule(),
     wnbaHandler.getSchedule(),
   ]);
@@ -199,6 +202,7 @@ app.get('/', async c => {
               <Victory />
               <WNBA />
               <WSN />
+              <Zeam />
             </Providers>
           </Main>
           <Style />
@@ -602,6 +606,7 @@ process.on('SIGINT', shutDown);
     hudlHandler.initialize(),
     kboHandler.initialize(),
     kslHandler.initialize(),
+    zeamHandler.initialize(),
     outsideHandler.initialize(),
     wnbaHandler.initialize(),
   ]);
