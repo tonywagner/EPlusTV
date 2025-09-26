@@ -447,7 +447,7 @@ class FoxOneHandler {
       const {data: streamData} = await axios.get(data.url, {
         headers: {
           'User-Agent': androidFoxOneUserAgent,
-          'x-api-key': `${this.fixedHost}${this.appConfig.network.apikey}`,
+          'x-api-key': this.appConfig.network.apikey,
         },
       });
 
@@ -503,7 +503,7 @@ class FoxOneHandler {
             headers: {
               'User-Agent': androidFoxOneUserAgent,
               authorization: this.adobe_auth.accessToken,
-              'x-api-key': `${this.fixedHost}${this.appConfig.network.apikey}`,
+              'x-api-key': this.appConfig.network.apikey,
             },
           },
         );
@@ -529,6 +529,10 @@ class FoxOneHandler {
 
     // get local station call sign
     let local_station_call_signs_parameter = '';
+    let callsign1 = '';
+    let callsign2 = '';
+    let callsign3 = '';
+
     try {
       const {meta} = await db.providers.findOneAsync<IProvider<any, IFoxOneMeta>>({name: 'foxone'});
       if ( !meta.local_station_call_signs || (meta.local_station_call_signs == '') ) {
@@ -544,9 +548,14 @@ class FoxOneHandler {
           },
         );
 
-        if ( data.data.results[0].local_station_call_signs ) {
+        if ( data.data.results[0].local_station_call_signs) {
           local_station_call_signs = data.data.results[0].local_station_call_signs;
-          console.log('FOX One found local FOX call sign ' + local_station_call_signs);
+          const call_signs_array = local_station_call_signs.split(',');
+          const trimmed_call_signs = call_signs_array.map(callSign => callSign.trim());
+          [callsign1, callsign2, callsign3] = [trimmed_call_signs[0],trimmed_call_signs[1], trimmed_call_signs[2]];
+
+
+          console.log(`FOX One found local FOX call signs ${callsign2} & ${callsign3}`);
           local_station_call_signs_parameter = '%2C' +  local_station_call_signs;
         } else {
           console.log('FOX One could not find a local FOX call sign');
@@ -574,8 +583,9 @@ class FoxOneHandler {
 
       for (let page = 1; page <= pages; page++) {
         const {data} = await axios.get<IFoxOneEventsData>(
-          `https://api.fox.com/fs/product/curated/v1/sporting/keystone/detail/by_filters?callsign=BTN%2CBTN-DIGITAL%2CFOX%2CFOX-DIGITAL%2CFOXDEP%2CFOXDEP-DIGITAL%2CFS1%2CFS1-DIGITAL%2CFS2%2CFS2-DIGITAL%2CFSP${local_station_call_signs_parameter}&end_date=${endTime}&page=${page}&size=${max_items_per_page}&start_date=${startTime}&video_type=listing`,
-          {
+//          `https://api.fox.com/fs/product/curated/v1/sporting/keystone/detail/by_filters?callsign=BTN%2CBTN-DIGITAL%2CFOX%2CFOX-DIGITAL%2CFOXDEP%2CFOXDEP-DIGITAL%2CFS1%2CFS1-DIGITAL%2CFS2%2CFS2-DIGITAL%2CFSP${local_station_call_signs_parameter}&end_date=${endTime}&page=${page}&size=${max_items_per_page}&start_date=${startTime}&video_type=listing`,
+            `https://api.fox.com/dtc/product/curated/epg/v1/live-geo/filter?call_sign=BTN%2CBTN-DIGITAL%2CFOX%2CFOX-DIGITAL%2CFOXDEP%2CFOXDEP-DIGITAL%2CFS1%2CFS1-DIGITAL%2CFS2%2CFS2-DIGITAL%2CFSP%2C${callsign2}%2C${callsign3}&status=live&size=1`,
+{
             headers: {
               'User-Agent': userAgent,
               authorization: `Bearer ${this.adobe_prelim_auth_token.accessToken}`,
@@ -625,18 +635,6 @@ class FoxOneHandler {
     }
   };
 
-  private fixedHost: string;
-
-
-  private async getAppConfigAndFixHost(): Promise<void> {
-    await this.getAppConfig();
-    if (this.appConfig?.network?.identity?.host) {
-      this.fixedHost = this.appConfig.network.identity.host.slice(0, -1);
-    } else {
-      throw new Error("App config or identity host is not available.");
-    }
-  }
-
   private getEntitlements = async (): Promise<void> => {
     try {
       if (!this.appConfig) {
@@ -644,12 +642,12 @@ class FoxOneHandler {
       }
 
       const {data} = await axios.get<any>(
-        `${this.fixedHost}${this.appConfig.network.identity.entitlementsUrl}?device_type=&device_id=${this.adobe_device_id}&resource=&requestor=`,
+         `https://ent.fox.com${this.appConfig.network.identity.entitlementsUrl}?device_type=&device_id=${this.adobe_device_id}&resource=&requestor=`,
         {
           headers: {
             'User-Agent': androidFoxOneUserAgent,
             authorization: this.adobe_auth.accessToken,
-            'x-api-key': `${this.fixedHost}${this.appConfig.network.apikey}`,
+            'x-api-key': this.appConfig.network.apikey,
           },
         },
       );
@@ -672,14 +670,15 @@ class FoxOneHandler {
       }
 
       const {data} = await axios.post<IAdobePrelimAuthToken>(
-        `${this.fixedHost}${this.appConfig.network.identity.loginUrl}`,
+        `https://id.fox.com${this.appConfig.network.identity.loginUrl}`,
+
         {
           deviceId: this.adobe_device_id,
         },
         {
           headers: {
             'User-Agent': androidFoxOneUserAgent,
-            'x-api-key': `${this.fixedHost}${this.appConfig.network.apikey}`,
+            'x-api-key': this.appConfig.network.apikey,
             'x-signature-enabled': true,
           },
         },
@@ -705,7 +704,7 @@ class FoxOneHandler {
 
     try {
       const {data} = await axios.post(
-       `${this.fixedHost}${this.appConfig.network.identity.regcodeUrl}`,
+        `https://id.fox.com${this.appConfig.network.identity.regcodeUrl}`,
         {
           deviceID: this.adobe_device_id,
           isMvpd: true,
@@ -715,13 +714,12 @@ class FoxOneHandler {
           headers: {
             'User-Agent': androidFoxOneUserAgent,
             authorization: `Bearer ${this.adobe_prelim_auth_token.accessToken}`,
-            'x-api-key': `${this.fixedHost}${this.appConfig.network.apikey}`,
+            'x-api-key': this.appConfig.network.apikey,
           },
         },
       );
       console.log(data.code)
-      console.log(this.adobe_prelim_auth_token.accessToken)
-      console.log(`${this.fixedHost}${this.appConfig.network.apikey}`)
+
       return data.code;
     } catch (e) {
       console.error(e);
@@ -735,13 +733,14 @@ class FoxOneHandler {
         await this.getAppConfig();
       }
 
-      const {data} = await axios.get(`${this.fixedHost}${this.appConfig.network.identity.checkAdobeUrl}?device_id=${this.adobe_device_id}`, {
+      const {data} = await axios.get(`https://id.fox.com/v2.0/checkadobeauthn/v2/?device_id=${this.adobe_device_id}`, {
+
         headers: {
           'User-Agent': androidFoxOneUserAgent,
           authorization: !this.adobe_auth?.accessToken
             ? `Bearer ${this.adobe_prelim_auth_token.accessToken}`
             : this.adobe_auth.accessToken,
-          'x-api-key': `${this.fixedHost}${this.appConfig.network.apikey}`,
+          'x-api-key': this.appConfig.network.apikey,
           'x-signature-enabled': true,
         },
       });
