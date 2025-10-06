@@ -88,3 +88,7 @@ export type ClassTypeWithoutMethods<T> = Omit<
     [K in keyof T]: T[K] extends (...args: any[]) => any ? K : never;
   }[keyof T]
 >;
+
+export interface IReleaseData {
+  tag_name: string;
+}

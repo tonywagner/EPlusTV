@@ -367,6 +367,12 @@ const parseAirings = async events => {
 
   const in_market_team_filter =
     plusMeta?.in_market_teams && plusMeta?.in_market_teams.length > 0 ? plusMeta?.in_market_teams.split(',') : [];
+    
+  const in_market_feed_filter =
+    plusMeta?.in_market_teams && plusMeta?.in_market_teams.length > 0 ? plusMeta?.in_market_teams.split(',').map(item => {
+    const words = item.trim().split(' ');
+    return words.length > 0 ? words[words.length - 1] : ''; 
+  }) : [];
 
   for (const event of events) {
     const entryExists = await db.entries.findOneAsync<IEntry>({id: event.id});
@@ -391,7 +397,10 @@ const parseAirings = async events => {
       }
 
       if (event.network?.id === 'bam_dtc' && in_market_team_filter.some(tn => event.name.indexOf(tn) > -1)) {
-        continue;
+        const feeds = events.filter((obj) => obj.name === event.name && obj.start === event.start);
+        if (feeds.length > 1 || in_market_feed_filter.some(tn => event.feedName.indexOf(tn) > -1)) {
+          continue;
+        }
       }
 
       console.log('Adding event: ', event.name);
