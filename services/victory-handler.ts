@@ -15,6 +15,7 @@ interface IVictoryEvent {
   imageUrl: string;
   videoUrl: string;
   seriesId: string;
+  seriesName: string;
   episodeType: 'live' | string;
 }
 
@@ -33,29 +34,40 @@ const DEVICE_INFO = {
   screenResW: 3840,
 };
 
-const ALLOWED_SERIES = ['66', '67', '68', '97', '99', '128', '139', '140', '141', '142', '150'];
-
 const fillEvent = (event: IVictoryEvent): [string, string[]] => {
   let sport = '';
   const categories = ['Victory+'];
   const seriesId = event.seriesId;
+  const seriesName = event.seriesName;
 
   if (seriesId === '66' || seriesId === '67' || seriesId === '68' || seriesId === '150') {
     // Stars or Ducks or Blues game
     sport = 'Hockey';
     categories.push('Hockey', 'NHL');
-  } else if (seriesId === '140' || seriesId === '141' || seriesId === '142') {
+  } else if (seriesId === '128' || seriesId === '139') {
+    // Rangers games?
+    sport = 'Baseball';
+    categories.push('Baseball', 'MLB');
+  } else if (seriesName.includes('WHL')) {
     // WHL
     sport = 'Hockey';
     categories.push('Hockey', 'WHL');
-  } else if (seriesId === '97') {
-    // Premier Lacrosse League
-    sport = 'Lacrosse';
-    categories.push('PLL');
-  } else if (seriesId === '99') {
+  } else if (seriesName.includes('THSCA')) {
+    // Texas high school football
+    sport = 'Football';
+    categories.push('Football', 'High School Football', 'Texas High School Football');
+  } else if (seriesName.includes('MASL')) {
     // Major Arena Soccer League
     sport = 'Soccer';
     categories.push('Soccer', 'MASL');
+  } else if (seriesName.includes('IFL')) {
+    // Indoor Football League
+    sport = 'Football';
+    categories.push('Football', 'Indoor Football', 'IFL');
+  } else if (seriesName.includes('WNFC')) {
+    // Women's National Football Conference
+    sport = 'Football';
+    categories.push('Football', 'Women\'s Football', 'WNFC');
   }
 
   return [sport, categories];
@@ -66,10 +78,12 @@ const parseAirings = async (events: IVictoryEvent[]) => {
   const {meta} = await db.providers.findOneAsync<IProvider<TVictoryTokens>>({name: 'victory'});
 
   for (const event of events) {
+    const [sport, categories] = fillEvent(event);
+
     if (
       !event ||
       !event.id ||
-      !ALLOWED_SERIES.includes(event.seriesId) ||
+      (sport == '') ||
       (event.seriesId === '66' && !meta.stars) ||
       (event.seriesId === '150' && !meta.stars) ||
       (event.seriesId === '67' && !meta.ducks) ||
@@ -89,8 +103,6 @@ const parseAirings = async (events: IVictoryEvent[]) => {
       if (end.isBefore(now) || start.isAfter(endDate)) {
         continue;
       }
-
-      const [sport, categories] = fillEvent(event);
 
       console.log('Adding event: ', event.title);
 
