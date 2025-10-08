@@ -5,7 +5,7 @@ import sharp from 'sharp';
 
 import {appStatus} from './app-status';
 import {db} from './database';
-import {IEntry, IStringObj} from './shared-interfaces';
+import {IEntry, IStringObj, IReleaseData} from './shared-interfaces';
 
 const chars = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMnumCharsOPQRSTUVWXYZ0123456789';
 
@@ -143,5 +143,28 @@ export const isBase64 = (str?: string): boolean => {
     return Buffer.from(str, 'base64').toString('base64') === str;
   } catch (e) {
     return false;
+  }
+};
+
+export const latestRelease = async (): Promise<string> => {
+  try {
+    const url = [
+      'https://',
+      'api.',
+      'github.',
+      'com',
+      '/repos',
+      '/tonywagner',
+      '/EPlusTV',
+      '/releases',
+      '/latest',
+    ].join('');
+    
+    const {data} = await axios.get<IReleaseData>(url);
+    
+    return data.tag_name;
+  } catch (e) {
+    console.error(e);
+    console.log('Failed to retrieve latest version number');
   }
 };

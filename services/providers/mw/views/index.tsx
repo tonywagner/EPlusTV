@@ -2,10 +2,14 @@ import {FC} from 'hono/jsx';
 
 import {db} from '@/services/database';
 import {IProvider} from '@/services/shared-interfaces';
+import {TMWTokens} from '@/services/mw-handler';
+
+import {MWBody} from './CardBody';
 
 export const MntWest: FC = async () => {
-  const mw = await db.providers.findOneAsync<IProvider>({name: 'mw'});
+  const mw = await db.providers.findOneAsync<IProvider<TMWTokens>>({name: 'mw'});
   const enabled = mw?.enabled;
+  const tokens = mw?.tokens;
 
   return (
     <div>
@@ -28,7 +32,9 @@ export const MntWest: FC = async () => {
             </label>
           </fieldset>
         </div>
-        <div id="mw-body" hx-swap="outerHTML" />
+        <div id="mw-body" hx-swap="outerHTML">
+          <MWBody enabled={enabled} tokens={tokens} />
+        </div>
       </section>
       <hr />
     </div>

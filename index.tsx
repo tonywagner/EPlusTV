@@ -45,6 +45,7 @@ import {
   removeAllEntries,
   removeChannelStatus,
   resetSchedule,
+  latestRelease,
 } from './services/shared-helpers';
 import {appStatus} from './services/app-status';
 import {SERVER_PORT} from './services/port';
@@ -126,7 +127,18 @@ const getUri = (c: Context<BlankEnv, '', BlankInput>): string => {
   return `${protocol}://${host}`;
 };
 
+let latestVersionChecked;
+const checkVersion = async () => {
+  const latestVersion = await latestRelease();
+  if ( (version != latestVersion.slice(1)) && (latestVersion != latestVersionChecked) ) {
+    console.log(`=== Newer version ${latestVersion} available, consider updating ===`);
+    latestVersionChecked = latestVersion;
+  }
+}
+
 const schedule = async () => {
+  await checkVersion();
+  
   console.log('=== Getting events ===');
 
   await Promise.all([
@@ -585,6 +597,7 @@ process.on('SIGINT', shutDown);
 
 (async () => {
   console.log(`=== E+TV v${version} starting ===`);
+  await checkVersion();  
   initDirectories();
 
   await initMiscDb();
