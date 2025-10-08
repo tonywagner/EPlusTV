@@ -279,7 +279,23 @@ export const CHANNELS = {
         name: 'FOX Deportes',
         stationId: '72189',
         tvgName: 'FXDEPHD',
-      },      
+      }, 
+        115: {
+        checkChannelEnabled: () => checkChannelEnabled('foxone', 'fnc'),
+        id: 'fnc',
+        logo: 'https://tmsimg.fancybits.co/assets/s15377_ll_h15_aa.png?w=360&h=270',
+        name: 'FOX News Channel',
+        stationId: '16374',
+        tvgName: 'FNC',
+      },
+        116: {
+        checkChannelEnabled: () => checkChannelEnabled('foxone', 'fbn'),
+        id: 'fbn',
+        logo: 'https://tmsimg.fancybits.co/assets/s15377_ll_h15_aa.png?w=360&h=270',
+        name: 'FOX Business Network',
+        stationId: '58649',
+        tvgName: 'FBN',
+      },           
     };
   },
 };

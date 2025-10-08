@@ -108,18 +108,18 @@ export const initMiscDb = async (): Promise<void> => {
     });
   }
 
-  if (linearChannelsEnv) {
-    console.log('Using LINEAR_CHANNELS variable is no longer needed. Please use the UI going forward');
-  }
-  if (startChannelEnv) {
-    console.log('Using START_CHANNEL variable is no longer needed. Please use the UI going forward');
-  }
-  if (numOfChannelsEnv) {
-    console.log('Using NUM_OF_CHANNELS variable is no longer needed. Please use the UI going forward');
-  }
-  if (proxySegmentsEnv) {
-    console.log('Using PROXY_SEGMENTS variable is no longer needed. Please use the UI going forward');
-  }
+  // if (linearChannelsEnv) {
+  //   console.log('Using LINEAR_CHANNELS variable is no longer needed. Please use the UI going forward');
+  // }
+  // if (startChannelEnv) {
+  //   console.log('Using START_CHANNEL variable is no longer needed. Please use the UI going forward');
+  // }
+  // if (numOfChannelsEnv) {
+  //   console.log('Using NUM_OF_CHANNELS variable is no longer needed. Please use the UI going forward');
+  // }
+  // if (proxySegmentsEnv) {
+  //   console.log('Using PROXY_SEGMENTS variable is no longer needed. Please use the UI going forward');
+  // }
   
   // force disabling of removed providers and their schedules
   try {
