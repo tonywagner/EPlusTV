@@ -181,7 +181,8 @@ const parseAirings = async (events: IFoxOneEvent[]) => {
       const end = moment(event.end_time);
       const originalEnd = moment(event.end_time);
 
-      const isLinear = event.network && useLinear; // removed !== 'fox' from before &&
+      const isLinear = useLinear; 
+      // const isLinear = event.network !== 'fox' && useLinear;
 
       if (!isLinear) {
         end.add(1, 'hour');
@@ -283,9 +284,63 @@ class FoxOneHandler {
           {
             enabled: true,
             id: 'btn',
-            name: 'BTN',
+            name: 'B1G Network',
             tmsId: '58321',
           },
+          {
+            enabled: true,
+            id: 'foxdep',
+            name: 'FOX Deportes',
+            tmsId: '72189',
+          },
+          {
+            enabled: true,
+            id: 'WNYW', // need to find out how to get local FOX call sign dynamically
+            name: 'FOX',
+            tmsId: '20360', // need to find out how to get local FOX tmsId dynamically
+          },
+          { 
+            enabled: true,
+            id: 'WWOR', // id: meta.local_station_call_signs[1], need to find out how to get dynamically
+            name: 'MyNetwork TV',
+            tmsId: '26566', // need to find out how to get local MyNetwork tmsId dynamically
+          },
+          {
+            enabled: true,
+            id: 'fnc',
+            name: 'FOX News Channel',
+            tmsId: '60179',
+          },
+          {
+            enabled: true,
+            id: 'fbn',
+            name: 'FOX Business Network',
+            tmsId: '58649',
+          },
+          {
+            enabled: true,
+            id: 'tmz',
+            name: 'TMZ',
+            tmsId: '149408',
+          },
+          {
+            enabled: true,
+            id: 'fmsc',
+            name: 'Masked Singer',
+            tmsId: '192070',
+          },
+          {
+            enabled: true,
+            id: 'soul',
+            name: 'Fox Soul',
+            tmsId: '149408',
+          },
+          {
+            enabled: true,
+            id: 'fwx',
+            name: 'Fox Weather',
+            tmsId: '121307',
+          },          
         ],
         meta: {
           only4k: useFoxOneOnly4k,
@@ -314,44 +369,61 @@ class FoxOneHandler {
     const {enabled, meta, linear_channels} = await db.providers.findOneAsync<IProvider>({name: 'foxone'});
 	
     // update/add Soccer Plus and Deportes, if necessary
-    if ( linear_channels.length <= 4 ) {
-      linear_channels[3] = {
-    	enabled: false,
-        id: 'fox-soccer-plus',
-        name: 'FOX Soccer Plus',
-        tmsId: '66880',
-      };
-      linear_channels.push({
-        enabled: true,
-        id: 'foxdep',
-        name: 'FOX Deportes',
-        tmsId: '72189',
-      });
-      linear_channels.push({
-        enabled: true,
-        id: 'localfox',
-        name: 'FOX',
-//        tmsId: '72189',
-      });
-      linear_channels.push({
-        enabled: true,
-//        id: meta.local_station_call_signs[1],
-        id: 'mynetwork',
-        name: 'MyNetwork TV',
- //       tmsId: '72189',
-      });
-       linear_channels.push({
-        enabled: true,
-        id: 'fnc',
-        name: 'FOX News',
-        tmsId: '16374',
-      });
-       linear_channels.push({
-        enabled: true,
-        id: 'fbn',
-        name: 'FOX Business',
-        tmsId: '58649',
-      });                 
+//    if ( linear_channels.length <= 4 ) {
+//      linear_channels[3] = {
+      //   enabled: true,
+      //   id: 'foxdep',
+      //   name: 'FOX Deportes',
+      //   tmsId: '72189',
+      // };
+      // linear_channels.push({
+      //   enabled: true,
+      //   id: 'WNYW', // need to find out how to get local FOX call sign dynamically
+      //   name: 'FOX',
+      //   tmsId: '20360', // need to find out how to get local FOX tmsId dynamically
+      // });
+      // linear_channels.push({
+      //   enabled: true,
+      //   id: 'WWOR', // id: meta.local_station_call_signs[1], need to find out how to get dynamically
+      //   name: 'MyNetwork TV',
+      //   tmsId: '26566', // need to find out how to get local MyNetwork tmsId dynamically
+      // });
+      //  linear_channels.push({
+      //   enabled: true,
+      //   id: 'fnc',
+      //   name: 'FOX News Channel',
+      //   tmsId: '60179',
+      // });
+      //  linear_channels.push({
+      //   enabled: true,
+      //   id: 'fbn',
+      //   name: 'FOX Business Network',
+      //   tmsId: '58649',
+      // });
+      // linear_channels.push({
+      //   enabled: true,
+      //   id: 'tmz',
+      //   name: 'TMZ',
+      //   tmsId: '149408',
+      // });
+      // linear_channels.push({
+      //   enabled: true,
+      //   id: 'fmsc',
+      //   name: 'Masked Singer',
+      //   tmsId: '192070',
+      // });
+      // linear_channels.push({
+      //   enabled: true,
+      //   id: 'soul',
+      //   name: 'Fox Soul',
+      //   tmsId: '149408',
+      // });
+      // linear_channels.push({
+      //   enabled: true,
+      //   id: 'fwx',
+      //   name: 'Fox Weather',
+      //   tmsId: '121307',
+      // });                  
       await db.providers.updateAsync<IProvider<TFoxOneTokens>, any>(
         {name: 'foxone'},
         {
@@ -360,29 +432,30 @@ class FoxOneHandler {
           },
         },
       );
-    }
+    
 
     if (!enabled) {
       return;
-    }
+};
 
-const { data: locatorData } = await axios.get(
-  'https://ent.fox.com/locator/v1/location',
-  {
-    headers: {
-      'User-Agent': userAgent,
-      'x-api-key': EPG_API_KEY,
-    },
-  }
-);
+// // 1️⃣ Get platform location and zip code from FOX locator API
+// const { data: locatorData } = await axios.get(
+//   'https://ent.fox.com/locator/v1/location',
+//   {
+//     headers: {
+//       'User-Agent': userAgent,
+//       'x-api-key': EPG_API_KEY,
+//     },
+//   }
+// );
 
-// The platform location is exposed in the response metadata
-const platformLocation = locatorData?.metadata?.x_platform_location;   // [1]
-const platformZip = locatorData?.data?.results?.zip_code; // [2]
+// // The platform location is exposed in the response metadata
+// const platformLocation = locatorData?.metadata?.x_platform_location;   // [1]
+// const platformZip = locatorData?.data?.results?.zip_code; // [2]
 
-// 2️⃣ Store it for later use (e.g., as a property on the handler)
-this.platform_location = platformLocation;
-this.platform_zip = platformZip;
+// // 2️⃣ Store it for later use (e.g., as a property on the handler)
+// this.platform_location = platformLocation;
+// this.platform_zip = platformZip;
 
 //    if (!meta.dtc_events) {
 //      const events = await db.entries.findAsync({from: 'foxone', id: {$regex: /_dtc/}});
@@ -399,6 +472,31 @@ this.platform_zip = platformZip;
 
     await this.getEntitlements();
   };
+
+  public async getLocation(): Promise<void> {
+  // 1. Get platform location and zip code from FOX locator API
+  const { data: locatorData } = await axios.get<any>(
+    'https://ent.fox.com/locator/v1/location',
+    {
+      headers: {
+        'User-Agent': userAgent,
+        'x-api-key': EPG_API_KEY,
+      },
+    }
+  );
+
+  // The platform location is exposed in the response metadata
+  const platformLocation = locatorData?.metadata?.x_platform_location;
+  const platformZip = locatorData?.data?.results?.zip_code;
+
+  // Store it for later use
+  this.platform_location = platformLocation;
+  this.platform_zip = platformZip;
+
+  console.log('Locator Data:', locatorData);
+  console.log('Zip Code:', this.platform_zip);
+  console.log('Location:', this.platform_location);
+  }
 
   public refreshTokens = async () => {
     const {enabled} = await db.providers.findOneAsync<IProvider>({name: 'foxone'});
@@ -668,6 +766,8 @@ this.platform_zip = platformZip;
 try {
   const events: IFoxOneEvent[] = [];
 
+  await this.getLocation();  // Ensure location and zip code are set
+
   // 1. Init request
   const { data: initData } = await axios.get<any>(
     'https://api.fox.com/dtc/product/config/v1/init',
@@ -681,7 +781,8 @@ try {
       },
     },
   );
-
+console.log('Zip Code:', this.platform_zip);
+console.log('Location:', this.platform_location);
   // 2. Live schedule page URI
   const liveScheduleUri = initData?.data?.dynamic_uris?.live_schedule_page_uri;
   if (!liveScheduleUri) {
@@ -754,7 +855,7 @@ try {
       m.entity_id && !m.entity_id.includes("-long-")
     ) {
       events.push(m);
-      console.log(`FOX One Event added: ${m.call_sign}: ${m.title}`);
+      console.log(`FOX One Event added: ${m.call_sign}: ${m.title} ${m.content_sku}`);
     }
   });
 } catch (e) {
@@ -781,6 +882,8 @@ return events;
       if (!this.appConfig) {
         await this.getAppConfig();
       }
+
+      await this.getLocation();  // Ensure location and zip code are set
 
       const {data} = await axios.get<any>(
         `https://ent.fox.com${this.appConfig.network.identity.entitlementsUrl}?device_type=&device_id=${this.adobe_device_id}&resource=&requestor=`,
