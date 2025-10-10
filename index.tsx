@@ -99,6 +99,9 @@ import {
   usesLinear,
   setXmltvPadding,
   setEventFilters,
+  getLatestVersion,
+  getLastModified,
+  setLastModified,
 } from './services/misc-db-service';
 
 // Check for SSL environment variables
@@ -127,12 +130,11 @@ const getUri = (c: Context<BlankEnv, '', BlankInput>): string => {
   return `${protocol}://${host}`;
 };
 
-let latestVersionChecked;
 const checkVersion = async () => {
-  const latestVersion = await latestRelease();
-  if ( (version != latestVersion.slice(1)) && (latestVersion != latestVersionChecked) ) {
-    console.log(`=== Newer version ${latestVersion} available, consider updating ===`);
-    latestVersionChecked = latestVersion;
+  const latest_version = await getLatestVersion();
+  const latest_release = await latestRelease();
+  if ( latest_release && (latest_release != '') && (latest_version != latest_release) && (version != latest_release.slice(1)) ) {
+    console.log(`=== Newer version ${latest_release} available, consider updating ===`);
   }
 }
 
@@ -596,11 +598,12 @@ process.on('SIGTERM', shutDown);
 process.on('SIGINT', shutDown);
 
 (async () => {
-  console.log(`=== E+TV v${version} starting ===`);
-  await checkVersion();  
+  console.log(`=== E+TV v${version} starting ===`); 
   initDirectories();
 
   await initMiscDb();
+  
+  await checkVersion(); 
 
   await Promise.all([
     espnHandler.initialize(),

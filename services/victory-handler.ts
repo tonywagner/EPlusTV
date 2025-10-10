@@ -16,6 +16,7 @@ interface IVictoryEvent {
   videoUrl: string;
   seriesId: string;
   seriesName: string;
+  seriesSlug: string;
   episodeType: 'live' | string;
 }
 
@@ -39,6 +40,7 @@ const fillEvent = (event: IVictoryEvent): [string, string[]] => {
   const categories = ['Victory+'];
   const seriesId = event.seriesId;
   const seriesName = event.seriesName;
+  const seriesSlug = event.seriesSlug;
 
   if (seriesId === '66' || seriesId === '67' || seriesId === '68' || seriesId === '150') {
     // Stars or Ducks or Blues game
@@ -48,23 +50,23 @@ const fillEvent = (event: IVictoryEvent): [string, string[]] => {
     // Rangers games?
     sport = 'Baseball';
     categories.push('Baseball', 'MLB');
-  } else if (seriesName.includes('WHL')) {
+  } else if (seriesName.includes('WHL') || seriesSlug.includes('WHL')) {
     // WHL
     sport = 'Hockey';
     categories.push('Hockey', 'WHL');
-  } else if (seriesName.includes('THSCA')) {
+  } else if (seriesName.includes('THSCA') || seriesSlug.includes('THSCA') || seriesName.includes('UIL') || seriesSlug.includes('UIL')) {
     // Texas high school football
     sport = 'Football';
     categories.push('Football', 'High School Football', 'Texas High School Football');
-  } else if (seriesName.includes('MASL')) {
+  } else if (seriesName.includes('MASL') || seriesSlug.includes('MASL')) {
     // Major Arena Soccer League
     sport = 'Soccer';
     categories.push('Soccer', 'MASL');
-  } else if (seriesName.includes('IFL')) {
+  } else if (seriesName.includes('IFL') || seriesSlug.includes('IFL')) {
     // Indoor Football League
     sport = 'Football';
     categories.push('Football', 'Indoor Football', 'IFL');
-  } else if (seriesName.includes('WNFC')) {
+  } else if (seriesName.includes('WNFC') || seriesSlug.includes('WNFC')) {
     // Women's National Football Conference
     sport = 'Football';
     categories.push('Football', 'Women\'s Football', 'WNFC');
@@ -83,7 +85,6 @@ const parseAirings = async (events: IVictoryEvent[]) => {
     if (
       !event ||
       !event.id ||
-      (sport == '') ||
       (event.seriesId === '66' && !meta.stars) ||
       (event.seriesId === '150' && !meta.stars) ||
       (event.seriesId === '67' && !meta.ducks) ||
@@ -183,23 +184,27 @@ class VictoryHandler {
     const [now, endSchedule] = normalTimeRange();
 
     try {
-      const url = [BASE_URL, '/content/categories/57'].join('');
+      const categoryIds = ['57']; // add 285 for WHL away feeds, but I think they are just duplicates of home feeds
+      
+      for (let i = 0; i < categoryIds.length; i++) {
+        const url = [BASE_URL, '/content/categories/', categoryIds[i]].join('');
 
-      const {data} = await axios.get<{contents: IVictoryEvent[]}>(url, {
-        headers: {
-          'Content-Type': 'application/json',
-          'User-Agent': userAgent,
-          'x-api-session': this.session_key,
-        },
-      });
+        const {data} = await axios.get<{contents: IVictoryEvent[]}>(url, {
+          headers: {
+            'Content-Type': 'application/json',
+            'User-Agent': userAgent,
+            'x-api-session': this.session_key,
+          },
+        });
 
-      debug.saveRequestData(data.contents, 'victory', 'epg');
+        debug.saveRequestData(data.contents, 'victory', 'epg');
 
-      data.contents.forEach(e => {
-        if (moment(e.broadcast_start * 1000).isBefore(endSchedule) && moment(e.broadcast_end * 1000).isAfter(now)) {
-          entries.push(e);
-        }
-      });
+        data.contents.forEach(e => {
+          if (moment(e.broadcast_start * 1000).isBefore(endSchedule) && moment(e.broadcast_end * 1000).isAfter(now)) {
+            entries.push(e);
+          }
+        });
+      }
     } catch (e) {
       console.error(e);
       console.log('Could not parse Victory+ events');

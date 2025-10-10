@@ -6,6 +6,7 @@ import sharp from 'sharp';
 import {appStatus} from './app-status';
 import {db} from './database';
 import {IEntry, IStringObj, IReleaseData} from './shared-interfaces';
+import {getLatestVersion, setLatestVersion, getLastModified, setLastModified} from './misc-db-service';
 
 const chars = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMnumCharsOPQRSTUVWXYZ0123456789';
 
@@ -147,6 +148,7 @@ export const isBase64 = (str?: string): boolean => {
 };
 
 export const latestRelease = async (): Promise<string> => {
+  let latest_version = await getLatestVersion();
   try {
     const url = [
       'https://',
@@ -160,11 +162,26 @@ export const latestRelease = async (): Promise<string> => {
       '/latest',
     ].join('');
     
-    const {data} = await axios.get<IReleaseData>(url);
+    let headers = {}
+    const last_modified = await getLastModified();
+    if ( last_modified != '' ) {
+      headers['If-Modified-Since'] = last_modified;
+    }
     
-    return data.tag_name;
+    const response = await axios.get(url, {headers});
+    
+    if ( response ) {
+      if ( response.data && response.data.tag_name ) {
+        latest_version = response.data.tag_name;
+        await setLatestVersion(latest_version);
+      }
+      if ( response.headers && response.headers['last-modified'] ) {
+        await setLastModified(response.headers['last-modified']);
+      }
+    }
   } catch (e) {
-    console.error(e);
-    console.log('Failed to retrieve latest version number');
+    //console.error(e);
+    //console.log('Failed to retrieve latest version number');
   }
+  return latest_version;
 };

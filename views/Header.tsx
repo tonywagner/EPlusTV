@@ -5,10 +5,10 @@ import {version} from '../package.json';
 import {latestRelease} from '@/services/shared-helpers';
 
 export const Header: FC = async () => {
-  const latestVersion = await latestRelease();
+  const latest_release = await latestRelease();
   let latestLabel = 'latest';
-  if ( version != latestVersion.slice(1) ) {
-    latestLabel = [latestLabel, latestVersion].join(' ');
+  if ( latest_release && (latest_release != '') && (version != latest_release.slice(1)) ) {
+    latestLabel = [latestLabel, latest_release].join(' ');
   }
   
   return (
