@@ -108,6 +108,28 @@ export const initMiscDb = async (): Promise<void> => {
     });
   }
 
+  const setupLatestVersion = (await db.misc.countAsync({name: 'latest_version'})) > 0 ? true : false;
+
+  if (!setupLatestVersion) {
+    await db.misc.insertAsync<IMiscDbEntry<string>>({
+      name: 'latest_version',
+      value: '',
+    });
+  } else {
+    await db.misc.updateAsync({name: 'latest_version'}, {$set: {value: ''}});
+  }
+
+  const setupLastModified = (await db.misc.countAsync({name: 'last_modified'})) > 0 ? true : false;
+
+  if (!setupLastModified) {
+    await db.misc.insertAsync<IMiscDbEntry<string>>({
+      name: 'last_modified',
+      value: '',
+    });
+  } else {
+    await db.misc.updateAsync({name: 'last_modified'}, {$set: {value: ''}});
+  }
+
   if (linearChannelsEnv) {
     console.log('Using LINEAR_CHANNELS variable is no longer needed. Please use the UI going forward');
   }
@@ -220,3 +242,21 @@ export const getTitleFilter = async () => {
 export const setEventFilters = async (categoryFilter: string, titleFilter: string): Promise<number> =>
   (await db.misc.updateAsync({name: 'category_filter'}, {$set: {value: categoryFilter}})).numAffected +
   (await db.misc.updateAsync({name: 'title_filter'}, {$set: {value: titleFilter}})).numAffected;
+
+export const getLatestVersion = async () => {
+  const {value} = await db.misc.findOneAsync<IMiscDbEntry<string>>({name: 'latest_version'});
+
+  return value;
+};
+
+export const setLatestVersion = async (latest_version: string): Promise<number> =>
+  (await db.misc.updateAsync({name: 'latest_version'}, {$set: {value: latest_version}})).numAffected;
+
+export const getLastModified = async () => {
+  const {value} = await db.misc.findOneAsync<IMiscDbEntry<string>>({name: 'last_modified'});
+
+  return value;
+};
+
+export const setLastModified = async (last_modified: string): Promise<number> =>
+  (await db.misc.updateAsync({name: 'last_modified'}, {$set: {value: last_modified}})).numAffected;
