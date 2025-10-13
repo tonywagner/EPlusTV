@@ -17,6 +17,11 @@ export const checkChannelEnabled = async (provider: string, channelId: string): 
   return network?.enabled;
 };
 
+const foxStationId = process.env.FOX_STATION_ID || '20360';
+const foxCallSign = process.env.FOX_TVG_NAME || 'WNYW;'
+const mnStationId = process.env.MN_STATION_ID || '26566';
+const mnCallSign = process.env.MN_TVG_NAME || 'WWOR';
+
 /* eslint-disable sort-keys-custom-order-fix/sort-keys-custom-order-fix */
 export const CHANNELS = {
   // eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types
@@ -241,101 +246,109 @@ export const CHANNELS = {
         tvgName: 'OTVSTR',
       },
       110: {
-        checkChannelEnabled: () => checkChannelEnabled('foxone', 'WNYW'),
-        id: 'WNYW', // need to figure out how to make dynamic based on location
+        checkChannelEnabled: () => checkChannelEnabled('foxone', 'FOX'),
+        id: 'FOX', // need to figure out how to make dynamic based on location
         logo: 'https://tmsimg.fancybits.co/assets/s28719_ll_h15_ac.png?w=360&h=270',
         name: 'FOX',
-        stationId: '20360', // need to figure out how to make dynamic based on location
-        tvgName: 'WNYW', // need to figure out how to make dynamic based on location
+        stationId: foxStationId, // need to figure out how to make dynamic based on location
+        tvgName: `${foxCallSign}-DT`, // need to figure out how to make dynamic based on location
       },
-      111: {
-        checkChannelEnabled: () => checkChannelEnabled('foxone', 'WWOR'),
-        id: 'WWOR', // need to figure out how to make dynamic based on location
-        logo: 'https://tmsimg.fancybits.co/assets/GNLZZGG0028Y3ZQ.png?w=360&h=270',
-        name: 'MyNetwork TV',
-        stationId: '26566', // need to figure out how to make dynamic based on location
-        tvgName: 'WWOR', // need to figure out how to make dynamic based on location
-      },
+      // 111: {
+      //   checkChannelEnabled: () => checkChannelEnabled('foxone', 'MNTV'),
+      //   id: 'MNTV', // need to figure out how to make dynamic based on location
+      //   logo: 'https://tmsimg.fancybits.co/assets/GNLZZGG0028Y3ZQ.png?w=360&h=270',
+      //   name: 'MyNetwork TV',
+      //   stationId: mnStationId, // need to figure out how to make dynamic based on location
+      //   tvgName: `${mnCallSign}-DT`, // need to figure out how to make dynamic based on location
+      // },
       112: {
-        checkChannelEnabled: () => checkChannelEnabled('foxone', 'fs1'),
-        id: 'fs1',
+        checkChannelEnabled: () => checkChannelEnabled('foxone', 'FS1'),
+        id: 'FS1',
         logo: 'https://tmsimg.fancybits.co/assets/s82547_ll_h15_aa.png?w=360&h=270',
         name: 'FS1',
         stationId: '82547',
         tvgName: 'FS1HD',
       },
       113: {
-        checkChannelEnabled: () => checkChannelEnabled('foxone', 'fs2'),
-        id: 'fs2',
+        checkChannelEnabled: () => checkChannelEnabled('foxone', 'FS2'),
+        id: 'FS2',
         logo: 'https://tmsimg.fancybits.co/assets/s59305_ll_h15_aa.png?w=360&h=270',
         name: 'FS2',
         stationId: '59305',
         tvgName: 'FS2HD',
       },
       114: {
-        checkChannelEnabled: () => checkChannelEnabled('foxone', 'btn'),
-        id: 'btn',
+        checkChannelEnabled: () => checkChannelEnabled('foxone', 'Big Ten Network'),
+        id: 'Big Ten Network',
         logo: 'https://tmsimg.fancybits.co/assets/s58321_ll_h15_ac.png?w=360&h=270',
         name: 'B1G Network',
         stationId: '58321',
         tvgName: 'BIG10HD',
       },
       115: {
-        checkChannelEnabled: () => checkChannelEnabled('foxone', 'foxdep'),
-        id: 'foxdep',
+        checkChannelEnabled: () => checkChannelEnabled('foxone', 'FOX Deportes'),
+        id: 'FOX Deportes',
         logo: 'https://tmsimg.fancybits.co/assets/s15377_ll_h15_aa.png?w=360&h=270',
         name: 'FOX Deportes',
         stationId: '72189',
         tvgName: 'FXDEPHD',
       }, 
         116: {
-        checkChannelEnabled: () => checkChannelEnabled('foxone', 'fnc'),
-        id: 'fnc',
+        checkChannelEnabled: () => checkChannelEnabled('foxone', 'FOX News'),
+        id: 'FOX News',
         logo: 'https://tmsimg.fancybits.co/assets/s60179_ll_h15_ab.png?w=360&h=270',
         name: 'FOX News Channel',
         stationId: '60179',
         tvgName: 'FNCHD',
       },
         117: {
-        checkChannelEnabled: () => checkChannelEnabled('foxone', 'fbn'),
-        id: 'fbn',
+        checkChannelEnabled: () => checkChannelEnabled('foxone', 'FOX Business'),
+        id: 'FOX Business',
         logo: 'https://tmsimg.fancybits.co/assets/s58718_ll_h15_ac.png?w=360&h=270',
         name: 'FOX Business Network',
         stationId: '58718',
         tvgName: 'FBNHD',
       },
         118: {
-        checkChannelEnabled: () => checkChannelEnabled('foxone', 'tmz'),
-        id: 'tmz',
+        checkChannelEnabled: () => checkChannelEnabled('foxone', 'TMZ'),
+        id: 'TMZ',
         logo: 'https://tmsimg.fancybits.co/assets/s149408_ll_h15_aa.png?w=360&h=270',
         name: 'TMZ',
         stationId: '149408',
         tvgName: 'TMZFAST',
       },
       119: {
-        checkChannelEnabled: () => checkChannelEnabled('foxone', 'fmsc'),
-        id: 'fmsc',
+        checkChannelEnabled: () => checkChannelEnabled('foxone', 'FOX Digital'),
+        id: 'FOX Digital',
         logo: 'https://tmsimg.fancybits.co/assets/GNLZZGG0027SNRC.png?w=360&h=270',
         name: 'Masked Singer',
         stationId: '192070',
         tvgName: 'FMSCFO',
       }, 
       120: {
-        checkChannelEnabled: () => checkChannelEnabled('foxone', 'soul'),
-        id: 'soul',
+        checkChannelEnabled: () => checkChannelEnabled('foxone', 'FOX Soul'),
+        id: 'FOX Soul',
         logo: 'https://tmsimg.fancybits.co/assets/s119212_ll_h15_aa.png?w=360&h=270',
         name: 'Fox Soul',
-        stationId: '149408',
+        stationId: '119212',
         tvgName: 'FOXSOUL',
       },
       121: {
-        checkChannelEnabled: () => checkChannelEnabled('foxone', 'fwx'),
-        id: 'fwx',
+        checkChannelEnabled: () => checkChannelEnabled('foxone', 'FOX Weather'),
+        id: 'FOX Weather',
         logo: 'https://tmsimg.fancybits.co/assets/GNLZZGG0029CYRH.png?w=360&h=270',
         name: 'Fox Weather',
         stationId: '121307',
         tvgName: 'FWX',
-      },                    
+      },
+      122: {
+        checkChannelEnabled: () => checkChannelEnabled('foxone', 'FOX LOCAL'),
+        id: 'FOX LOCAL',
+        logo: 'https://tmsimg.fancybits.co/assets/GNLZZGG0029CYRH.png?w=360&h=270',
+        name: 'Fox Live Now',
+        stationId: '119219',
+        tvgName: 'LIVENOW',
+      },                     
     };
   },
 };
