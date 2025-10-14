@@ -18,7 +18,7 @@ export const ESPN: FC = async () => {
     <div>
       <section class="overflow-auto provider-section">
         <div class="grid-container">
-          <h4>ESPN</h4>
+          <h4>ESPN with TV provider</h4>
           <fieldset>
             <label>
               Enabled&nbsp;&nbsp;

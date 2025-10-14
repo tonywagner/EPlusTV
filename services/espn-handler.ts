@@ -39,6 +39,7 @@ import {
 import {db} from './database';
 import {debug} from './debug';
 import {usesLinear} from './misc-db-service';
+import {removeEntriesNetwork} from './build-schedule';
 
 global.WebSocket = ws;
 
@@ -611,14 +612,16 @@ class EspnHandler {
     if (!enabled) {
       return;
     }
+    
+    await removeEntriesNetwork('ESPN+');
 
-    const {meta: plusMeta} = await db.providers.findOneAsync<IProvider<TESPNPlusTokens, IEspnPlusMeta>>({
+    /*const {meta: plusMeta} = await db.providers.findOneAsync<IProvider<TESPNPlusTokens, IEspnPlusMeta>>({
       name: 'espnplus',
     });
 
     if (!plusMeta?.zip_code || !plusMeta?.in_market_teams) {
       await this.refreshInMarketTeams();
-    }
+    }*/
 
     // Load tokens from local file and make sure they are valid
     await this.load();
@@ -659,12 +662,12 @@ class EspnHandler {
     let entries = [];
 
     try {
-      if (espnPlusEnabled) {
+      /*if (espnPlusEnabled) {
         console.log('Looking for ESPN+ events...');
 
         const liveEntries = await this.getLiveEvents();
         entries = [...entries, ...liveEntries];
-      }
+      }*/
 
       if (espnLinearEnabled) {
         console.log('Looking for ESPN events');
@@ -720,10 +723,10 @@ class EspnHandler {
       const date = moment(today).add(i, 'days');
 
       try {
-        if (espnPlusEnabled) {
+        /*if (espnPlusEnabled) {
           const upcomingEntries = await this.getUpcomingEvents(date.format('YYYY-MM-DD'));
           entries = [...entries, ...upcomingEntries];
-        }
+        }*/
         if (isChannelEnabled('espn1')) {
           const upcomingEntries = await this.getUpcomingEvents(date.format('YYYY-MM-DD'), 'espn1');
           entries = [...entries, ...upcomingEntries];

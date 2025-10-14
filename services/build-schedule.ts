@@ -7,6 +7,10 @@ export const removeEntriesProvider = async (providerName: string): Promise<void>
   await db.entries.removeAsync({from: providerName}, {multi: true});
 };
 
+export const removeEntriesNetwork = async (networkName: string): Promise<void> => {
+  await db.entries.removeAsync({network: networkName}, {multi: true});
+};
+
 const scheduleEntry = async (entry: IEntry & IDocument, startChannel: number, numOfChannels: number): Promise<void> => {
   let channelNum: number;
 
