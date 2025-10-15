@@ -606,6 +606,10 @@ class EspnHandler {
     if (useEspnews) {
       console.log('Using ESPNEWS variable is no longer needed. Please use the UI going forward');
     }
+    
+    if (await isEnabled('espn3isp') && await isEnabled('espn3')) {
+      console.log('Currently expecting ESPN3 access via ISP, re-authenticate if that is no longer true');
+    }
 
     const enabled = await isEnabled();
 
@@ -893,7 +897,7 @@ class EspnHandler {
 
       return [uri, headers];
     } catch (e) {
-      // console.error(e);
+      console.error(e);
       console.log('Could not get stream data. Event might be upcoming, ended, or in blackout...');
     }
   };

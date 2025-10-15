@@ -67,10 +67,16 @@ espn.get('/tve-login/:code', async c => {
   if (!isAuthenticated) {
     return c.html(<Login code={code} />);
   }
+  
+  let updatedMeta = await db.providers.findOneAsync<IProvider<any, IEspnMeta>>({name: 'espn'});
+  if (updatedMeta['espn3isp']) {
+    console.log('Preferring ESPN3 via TVE rather than ISP');
+    updatedMeta['espn3isp'] = false;
+  }
 
   const {affectedDocuments} = await db.providers.updateAsync<IProvider<TESPNTokens, IEspnMeta>, any>(
     {name: 'espn'},
-    {$set: {enabled: true}},
+    {$set: {enabled: true, meta: updatedMeta}},
     {returnUpdatedDocs: true},
   );
   const {tokens, linear_channels, meta} = affectedDocuments as IProvider<TESPNTokens, IEspnMeta>;
@@ -149,10 +155,12 @@ espn.put('/features/toggle/:id', async c => {
     [featureId]: enabled,
   }
   if (featureId === 'espn3') {
+    updatedMeta['espn3isp'] = false;
     if (enabled) {
-      updatedMeta['espn3isp'] = await espnHandler.ispAccess();
-    } else {
-      updatedMeta['espn3isp'] = false;
+      const {tokens} = await db.providers.findOneAsync<IProvider<TESPNTokens>>({name: 'espn'});
+      if (!tokens.adobe_auth) {
+        updatedMeta['espn3isp'] = await espnHandler.ispAccess();
+      }
     }
   }
 

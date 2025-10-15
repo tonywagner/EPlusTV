@@ -2,17 +2,15 @@ name: Create Release on Tag Push
 
 on:
   push:
-    branches:
-      - 'master'
     tags:
-      - 'v*'
+      - '*'
 
 jobs:
   create_release:
     runs-on: ubuntu-latest
     permissions:
       contents: write
-
+    if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/')
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
