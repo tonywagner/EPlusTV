@@ -15,7 +15,14 @@ export const ESPNPlus: FC = async () => {
     <div>
       <section class="overflow-auto provider-section">
         <div class="grid-container">
-          <h4>ESPN+</h4>
+          <h4>
+            <span>
+              ESPN Account
+              <span class="warning-red" data-tooltip="Formerly ESPN+, no longer working" data-placement="right">
+                **
+              </span>
+            </span>
+          </h4>
           <fieldset>
             <label>
               Enabled&nbsp;&nbsp;

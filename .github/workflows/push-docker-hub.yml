@@ -2,14 +2,13 @@ name: ci
 
 on:
   push:
-    branches:
-      - 'master'
     tags:
-      - 'v*'
+      - '*'
 
 jobs:
   docker:
     runs-on: ubuntu-latest
+    if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/')
     steps:
       -
         name: Checkout
