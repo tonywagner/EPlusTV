@@ -70,6 +70,22 @@ export const CHANNELS = {
         stationId: '59976',
         tvgName: 'ESPNWHD',
       },
+      6: {
+        checkChannelEnabled: () => checkChannelEnabled('espn', 'espndeportes'),
+        id: 'espndeportes',
+        logo: 'https://tmsimg.fancybits.co/assets/s71914_ll_h15_aa.png?w=360&h=270',
+        name: 'ESPN Deportes',
+        stationId: '71914',
+        tvgName: 'ESPNDHD',
+      },
+      7: {
+        checkChannelEnabled: () => checkChannelEnabled('espn', 'espnonabc'),
+        id: 'espnonabc',
+        logo: 'https://tmsimg.fancybits.co/assets/s28708_ll_h15_aa.png?w=360&h=270',
+        name: 'ESPN on ABC',
+        stationId: '28708',
+        tvgName: 'ESPNONABC',
+      },
       10: {
         checkChannelEnabled: () => checkChannelEnabled('foxsports', 'fs1'),
         id: 'fs1',
