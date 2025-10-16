@@ -184,13 +184,15 @@ class FoxOneHandler {
   public adobe_device_id?: string;
   public adobe_prelim_auth_token?: IAdobePrelimAuthToken;
   public adobe_auth?: IAdobeAuthFoxOne;
-  public platform_location?: string;
-  public platform_zip?: string;
-
+  
+  private platform_location?: string;
+  private platform_zip?: string;
   private contentEntitlement?: string;
   private homeMetroCode?: string;
   private homeZipCode?: string;
   private entitlements: string[] = [];
+  private entArray: string[] = [];
+  private contentEnt: any;
   private appConfig: IAppConfig;
   private foxStationId = process.env.FOX_STATION_ID || '20360';
   private mnStationId = process.env.MN_STATION_ID || '26566';
@@ -218,13 +220,12 @@ class FoxOneHandler {
           name: 'FOX',
           tmsId: this.foxStationId, 
         },
-        // Cannot find guide data for MyNetwork TV. This should be looked into again in the future
-        // {
-        //   enabled: false,
-        //   id: 'MNTV', 
-        //   name: 'MyNetwork TV',
-        //   tmsId: this.mnStationId, 
-        // },
+        {
+          enabled: true,
+          id: 'MNTV', 
+          name: 'MyNetwork TV',
+          tmsId: this.mnStationId, 
+        },
         {
           enabled: true,
           id: 'FS1', 
@@ -343,7 +344,7 @@ class FoxOneHandler {
     'https://ent.fox.com/locator/v1/location',
     {
       headers: {
-        'User-Agent': userAgent,
+        'User-Agent': androidFoxOneUserAgent,
         'x-api-key': this.appConfig.network.apikey,
       },
     }
@@ -409,36 +410,35 @@ public async getUserEntitlements(): Promise<void> {
       }
     }
 
-// Hardcoded x-fox-content-entitlement for now which when decoded returns "This is a test string for decoding purposes.".  Needed for getting local fox event information.
-this.contentEntitlement = 'H4sIAAAAAAAA/1TOwQoCMQwE0B9yBffo0YNH/8F202VhNwlNWvv5goIZb/NmSkmz813GrdnGZHY9ui6nb/egVzg5T8l5XgWrXy4pT0UGGDbOkfGNjIX0j9uKJHbkLvm5YyFMSFOpHheXSjDbBfIMWePLg71/8A4AAP///Dq0cBQBAAA=';
+  
+//This block is used to get x-fox-content-entitlement and store it in this.contentEntitlement
+    const { data: userData } = await axios.post<any>(
+      'https://api.fox.com/dtc/product/config/v1/keygen/secondary_info',
+      this.contentEnt, 
+      {
+        headers: {
+          'User-Agent': androidFoxOneUserAgent,
+          'x-fox-apikey': this.appConfig.network.apikey,
+          authorization: `Bearer ${this.adobe_prelim_auth_token.accessToken}`,
+          'x-platform-location': this.platform_location || '', 
+          'x-fox-zipcode': this.platform_zip || '',
+          'x-home-zipcode': this.homeZipCode || '',
+          'x-fox-home-dma': this.homeMetroCode || '',
+          'x-fox-dma': this.homeMetroCode || '',
+        },
+      }
+    );
 
-//This block is used to get x-fox-content-entitlement and store it in this.contentEntitlement -- Not working as intended, so hardcoded the entitlement for now but kept for future testing
-    // const { data: userData } = await axios.post<any>(
-    //   'https://api.fox.com/dtc/product/config/v1/keygen/secondary_info',
-    //   {},
-    //   {
-    //     headers: {
-    //       'User-Agent': androidFoxOneUserAgent,
-    //       'x-fox-apikey': this.appConfig.network.apikey,
-    //       authorization: `Bearer ${this.adobe_prelim_auth_token.accessToken}`,
-    //       'x-platform-location': this.platform_location || '', 
-    //       'x-fox-zipcode': this.platform_zip || '',
-    //       'x-home-zipcode': this.homeZipCode || '',
-    //       'x-fox-home-dma': this.homeMetroCode || '',
-    //       'x-fox-dma': this.homeMetroCode || '',
-    //     },
-    //   }
-    // );
+     // Extract and store x-fox-content-entitlement
+    const headers = userData?.data?.headers || [];
+    const entitlementHeader = headers.find((h: any) => h.key === 'x-fox-content-entitlement');
 
-    //  // Extract and store x-fox-content-entitlement
-    // const headers = userData?.data?.headers || [];
-    // const entitlementHeader = headers.find((h: any) => h.key === 'x-fox-content-entitlement');
-    // if (entitlementHeader && entitlementHeader.value) {
-    //   this.contentEntitlement = entitlementHeader.value;
-    //   console.log('Stored x-fox-content-entitlement:', this.contentEntitlement);
-    // } else {
-    //   console.warn('x-fox-content-entitlement not found in response');
-    // }
+    if (entitlementHeader && entitlementHeader.value) {
+      this.contentEntitlement = entitlementHeader.value;
+      //console.log('Stored x-fox-content-entitlement:', this.contentEntitlement);
+    } else {
+      console.warn('x-fox-content-entitlement not found in response');
+    }
 
     //console.log('User Data Call response received.');
     //console.log('User Data:', JSON.stringify(userData, null, 2)); // Should display the response data or empty object if no data
@@ -602,35 +602,17 @@ this.contentEntitlement = 'H4sIAAAAAAAA/1TOwQoCMQwE0B9yBffo0YNH/8F202VhNwlNWvv5g
 try {
   // const events: IFoxOneEvent[] = []; removed because it is causing issues getting events
 
-  await this.getLocation();  
+  await this.getLocation();
+  await this.getEntitlements();  //// Added for testing ////
   await this.getUserEntitlements();
+
 
   // 1. Init request
   const { data: initData } = await axios.get<any>(
     'https://api.fox.com/dtc/product/config/v1/init',
     {
       headers: {
-        'User-Agent': userAgent,
-        authorization: `Bearer ${this.adobe_prelim_auth_token.accessToken}`,
-        'x-fox-apikey': this.appConfig.network.apikey,
-        'x-platform-location': this.platform_location,
-        'x-fox-zipcode': this.platform_zip,
-      },
-    },
-  );
-
-  // 2. Live schedule page URI
-  const liveScheduleUri = initData?.data?.dynamic_uris?.live_schedule_page_uri;
-  if (!liveScheduleUri) {
-    throw new Error('live_schedule_page_uri not found in init data');
-  }
-
-  // 3. Fetch live schedule page (prepend base)
-  const { data: scheduleData } = await axios.get<any>(
-    `https://api.fox.com/dtc${liveScheduleUri}`,
-    {
-      headers: {
-        'User-Agent': userAgent,
+        'User-Agent': androidFoxOneUserAgent,
         authorization: `Bearer ${this.adobe_prelim_auth_token.accessToken}`,
         'x-fox-apikey': this.appConfig.network.apikey,
         'x-platform-location': this.platform_location,
@@ -639,6 +621,82 @@ try {
         'x-fox-home-dma': this.homeMetroCode || '',
         'x-fox-dma': this.homeMetroCode || '',
         'x-fox-content-entitlement': this.contentEntitlement || '',
+        'x-fox-userauth': `Bearer ${this.adobe_prelim_auth_token.accessToken}`,
+      },
+    },
+  );
+
+  // 2. Fetch navigation page (prepend base)
+  const navigationUri = initData?.data?.dynamic_uris?.navigation_uri;
+
+  if (!navigationUri) {
+    throw new Error('navigation_uri not found in init data');
+  }
+
+  const { data: navData } = await axios.get<any>(
+  `https://api.fox.com/dtc${navigationUri}?page=1&size=25`,
+  {
+    headers: {
+      'User-Agent': androidFoxOneUserAgent,
+      authorization: `Bearer ${this.adobe_prelim_auth_token.accessToken}`,
+      'x-fox-apikey': this.appConfig.network.apikey,
+      'x-platform-location': this.platform_location,
+      'x-fox-zipcode': this.platform_zip,
+      'x-home-zipcode': this.homeZipCode || '',
+      'x-fox-home-dma': this.homeMetroCode || '',
+      'x-fox-dma': this.homeMetroCode || '',
+      'x-fox-content-entitlement': this.contentEntitlement || '',
+      'x-fox-userauth': `Bearer ${this.adobe_prelim_auth_token.accessToken}`,
+    },
+  },
+);
+
+let lSchedUri: string | undefined = undefined;
+
+if (navData.data?.items) {
+    for (const item of navData.data.items) {
+        if (item.subitems) {
+            for (const subitem of item.subitems) {
+                if (subitem.subitems) {
+                    // Look for the guide within the SECOND level of 'subitems'
+                    const foundDeepSubitem = subitem.subitems.find(
+                        (deepSub: any) => deepSub.item_key === "guide"
+                    );
+
+                    if (foundDeepSubitem) {
+                        lSchedUri = foundDeepSubitem.page_uri;
+                        break;
+                    }
+                }
+            }
+        }
+        if (lSchedUri) {
+            break;
+        }
+    }
+}
+  const liveScheduleUri = lSchedUri;
+
+  // 3. Fetch live schedule page (prepend base)
+
+  if (!liveScheduleUri) {
+    throw new Error('live_schedule_page_uri not found in init data');
+  }
+
+  const { data: scheduleData } = await axios.get<any>(
+    `https://api.fox.com/dtc${liveScheduleUri}`,
+    {
+      headers: {
+        'User-Agent': androidFoxOneUserAgent,
+        authorization: `Bearer ${this.adobe_prelim_auth_token.accessToken}`,
+        'x-fox-apikey': this.appConfig.network.apikey,
+        'x-platform-location': this.platform_location,
+        'x-fox-zipcode': this.platform_zip,
+        'x-home-zipcode': this.homeZipCode || '',
+        'x-fox-home-dma': this.homeMetroCode || '',
+        'x-fox-dma': this.homeMetroCode || '',
+        'x-fox-content-entitlement': this.contentEntitlement || '',
+        'x-fox-userauth': `Bearer ${this.adobe_prelim_auth_token.accessToken}`,
       },
     },
   );
@@ -649,50 +707,79 @@ try {
 
   // 5. Fetch each container and combine into one list
   const allContainerData: any[] = [];
-  for (const uri of containerUris) {
-    try {
-      const { data } = await axios.get<any>(
-        `https://api.fox.com/dtc${uri}`,
-        {
-          headers: {
-            'User-Agent': userAgent,
-            authorization: `Bearer ${this.adobe_prelim_auth_token.accessToken}`,
-            'x-fox-apikey': this.appConfig.network.apikey,
-            'x-platform-location': this.platform_location,
-            'x-fox-zipcode': this.platform_zip,
-            'x-home-zipcode': this.homeZipCode || '',
-            'x-fox-home-dma': this.homeMetroCode || '',
-            'x-fox-dma': this.homeMetroCode || '',
-            'x-fox-content-entitlement': this.contentEntitlement || '',
-          },
+
+for (const uri of containerUris) {
+  try {
+    const { data } = await axios.get<any>(
+      `https://api.fox.com/dtc${uri}`,
+      {
+        headers: {
+          'User-Agent': androidFoxOneUserAgent,
+          authorization: `Bearer ${this.adobe_prelim_auth_token.accessToken}`,
+          'x-fox-apikey': this.appConfig.network.apikey,
+          'x-platform-location': this.platform_location,
+          'x-fox-zipcode': this.platform_zip,
+          'x-home-zipcode': this.homeZipCode || '',
+          'x-fox-home-dma': this.homeMetroCode || '',
+          'x-fox-dma': this.homeMetroCode || '',
+          'x-fox-content-entitlement': this.contentEntitlement || '',
+          'x-fox-userauth': `Bearer ${this.adobe_prelim_auth_token.accessToken}`,
         },
-      );
-      allContainerData.push(data.data);
+      },
+    );
 
-      } catch (err) {
-      console.warn(`Failed to fetch container ${uri}:`, err);
+    // Push the actual items array from data.data
+    if (data?.data?.items && Array.isArray(data.data.items)) {
+      allContainerData.push(...data.data.items); // Spread to flatten into main array
+    } else {
+      console.warn(`No items found in container ${uri}`);
     }
+
+  } catch (err) {
+    console.warn(`Failed to fetch container ${uri}:`, err);
   }
+}
 
-   // Create a flattened list of all events from the nested `items` array
-  const allEvents = allContainerData
-  .flatMap(container => container.items ?? [])
-  .map(event => {
-    if (!event.genre_metadata) {
-      // fill with an empty array as default
-      event.genre_metadata = { display_name: [] };
-    }
-    return event;
-  });
+// Extract all event_ids
+const allEntityIds: string[] = allContainerData
+  .filter(item => item && typeof item === 'object' && item.entity_id)
+  .map(item => item.entity_id);
+
+//console.log('All event IDs:', allEntityIds);
+//console.log('Total event IDs:', allEntityIds.length);
+// Extract all event_ids
+
+// Check for duplicates
+const seen = new Set();
+const duplicates = new Set();
+
+allEntityIds.forEach(id => {
+  if (seen.has(id)) {
+    duplicates.add(id);
+  } else {
+    seen.add(id);
+  }
+});
+
+//console.log('Duplicate event IDs:', Array.from(duplicates));
+//console.log('Total duplicates found:', duplicates.size);
+
+// Optionally create a flattened list of all events
+const allEvents = allContainerData.map(event => {
+  if (!event.genre_metadata) {
+    event.genre_metadata = []; // Default to empty array
+  }
+  return event;
+});
+
   // 6. Use the flattened list for the filtering logic
 
-    const uniqueChannels = new Set<string>();
-    const channelInfo: any[] = [];
-
   _.forEach(allEvents, m => {
+
+  //// Use for Debugging Event Entry
   // If content_sku is missing, skip this event
   if (!m.content_sku) {
-    console.log(`Skipping event - no content_sku: ${m.call_sign}: ${m.description}`);
+    //console.log(`Skipping event - no content_sku: ${m.call_sign}: ${m.description}`);
     return;
   }
 
@@ -752,14 +839,46 @@ try {
           },
         },
       );
+
       this.entitlements = [];
-      // The entitlements are in data.data.results, which is an array of objects with contentSku
+      this.entArray = [];
+      this.contentEnt = [];
+
+      // Check if data.data exists and contains results
       const results = data?.data?.results;
       if (Array.isArray(results)) {
+        this.entArray = results; // This will contain all the entitlement objects
         this.entitlements = results
           .map((item: any) => item.contentSku)
           .filter((sku: any) => typeof sku === 'string');
       }
+
+      if (Array.isArray(this.entArray) && this.entArray.length > 0) {
+        const transformedEntitlements = this.entArray.map((item: any) => ({
+          content_sku: item.contentSku,
+          proxied_entitlement: item.proxiedEntitlement,
+          entitlement_types: item.entitlementType || []
+        }));
+        
+        const finalEntitlements = {
+          favorites: {
+            teams: [],
+            series:[],
+            leagues: [],
+            movies: [],
+            specials: [],
+          },
+          user_entitlement: transformedEntitlements,
+          user_onboarding_preferences: []
+        };
+        
+        // Save to this.contentEnt
+        this.contentEnt = finalEntitlements;
+        
+        //console.log('Transformed entitlements:', this.contentEnt);
+      }
+
+      //console.log('ENT ARRAY: ', this.entArray)
     } catch (e) {
       console.error(e);
     }
@@ -871,7 +990,7 @@ try {
   };
 
   private save = async () => {
-    await db.providers.updateAsync({name: 'foxone'}, {$set: {tokens: _.omit(this, 'appConfig', 'entitlements')}});
+    await db.providers.updateAsync({name: 'foxone'}, {$set: {tokens: _.omit(this, 'appConfig', 'entitlements', 'entArray', 'foxStationId', 'mnStationId', 'platform_location', 'platform_zip', 'contentEnt')}});
   };
 
   private load = async (): Promise<void> => {

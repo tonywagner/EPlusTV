@@ -19,11 +19,9 @@ interface IAppConfig {
   network: {
     identity: {
       host: string; // this is the base url -- need to slice the trailing '/' off
-      entitlementsUrl: string; // was getentitlements -- may need to change
-      regcodeUrl: string; // was accountRegCode
-      registerUrl: string; // not sure if necessary yet
-      checkAdobeUrl: string; //was checkadobeauthn
-      refreshTokenUrl: string; // not sure if necessary yet
+      entitlementsUrl: string; 
+      regcodeUrl: string; 
+      checkAdobeUrl: string;
       loginUrl: string;
     };
     auth: {
@@ -32,8 +30,7 @@ interface IAppConfig {
     apikey: string; // was key
   };
   playback: {
-    baseApiUrl: string; // was content.watch
-    liveAssetInfoUrl: string; // not sure if necessary yet -- adds v3.0/assetinfo/ to baseApiUrl
+    baseApiUrl: string; 
   };
 }
 
@@ -83,41 +80,6 @@ interface IFoxOneMeta {
   dtc_events?: boolean;
   local_station_call_signs?: string[] | string;
 }
-
-const EPG_API_KEY = [
-  'Y',
-  '5',
-  's',
-  't',
-  '1',
-  'H',
-  'o',
-  'L',
-  'L',
-  'O',
-  'J',
-  'F',
-  'l',
-  'H',
-  'S',
-  't',
-  'A',
-  '3',
-  'a',
-  'l',
-  'O',
-  'L',
-  't',
-  'G',
-  'J',
-  'P',
-  'S',
-  '7',
-  'D',
-  'U',
-  'x',
-  'n',
-].join('');
 
 const foxOneConfigPath = path.join(configPath, 'foxone_tokens.json');
 
@@ -252,80 +214,80 @@ class FoxOneHandler {
       linear_channels: [
         {
           enabled: true,
-          id: 'FOX', // Matches the id in channels.ts for channel 110
+          id: 'FOX', 
           name: 'FOX',
-          tmsId: this.foxStationId, // Need to figure out how to make this dynamic
+          tmsId: this.foxStationId, 
         },
         // Cannot find guide data for MyNetwork TV. This should be looked into again in the future
         // {
         //   enabled: false,
-        //   id: 'MNTV', // Matches the id in channels.ts for channel 111
+        //   id: 'MNTV', 
         //   name: 'MyNetwork TV',
-        //   tmsId: this.mnStationId, // need to figure out how to make this dynamic
+        //   tmsId: this.mnStationId, 
         // },
         {
           enabled: true,
-          id: 'FS1', // Matches the id in channels.ts for channel 112
+          id: 'FS1', 
           name: 'FS1',
           tmsId: '82547',
         },
         {
           enabled: true,
-          id: 'FS2', // Matches the id in channels.ts for channel 113
+          id: 'FS2', 
           name: 'FS2',
           tmsId: '59305',
         },
         {
           enabled: true,
-          id: 'Big Ten Network', // Matches the id in channels.ts for channel 114
+          id: 'Big Ten Network', 
           name: 'B1G Network',
           tmsId: '58321',
         },
         {
           enabled: true,
-          id: 'FOX Deportes', // Matches the id in channels.ts for channel 115
+          id: 'FOX Deportes', 
           name: 'FOX Deportes',
           tmsId: '72189',
         },
         {
           enabled: true,
-          id: 'FOX News', // Matches the id in channels.ts for channel 116
+          id: 'FOX News', 
           name: 'FOX News Channel',
           tmsId: '60179',
         },
         {
           enabled: true,
-          id: 'FOX Business', // Matches the id in channels.ts for channel 117
+          id: 'FOX Business', 
           name: 'FOX Business Network',
           tmsId: '58649',
         },
         {
           enabled: true,
-          id: 'TMZ', // Matches the id in channels.ts for channel 118
+          id: 'TMZ', 
           name: 'TMZ',
           tmsId: '149408',
         },
         {
           enabled: true,
-          id: 'FOX Digital', // Matches the id in channels.ts for channel 119
+          id: 'FOX Digital', 
           name: 'Masked Singer',
           tmsId: '192070',
         },
         {
           enabled: true,
-          id: 'FOX Soul', // Matches the id in channels.ts for channel 120
+          id: 'FOX Soul', 
           name: 'Fox Soul',
-          tmsId: '149408',
+          tmsId: '119212',
         },
         {
           enabled: true,
-          id: 'FOX Weather', // Matches the id in channels.ts for channel 121
+          id: 'FOX Weather',
           name: 'Fox Weather',
           tmsId: '121307',
         },
                 {
           enabled: true,
-          id: 'FOX LOCAL', // Matches the id in channels.ts for channel 121
+          id: 'FOX LOCAL',
           name: 'Fox Live Now',
           tmsId: '119219',
         },
@@ -382,7 +344,7 @@ class FoxOneHandler {
     {
       headers: {
         'User-Agent': userAgent,
-        'x-api-key': EPG_API_KEY,
+        'x-api-key': this.appConfig.network.apikey,
       },
     }
   );
@@ -443,12 +405,9 @@ public async getUserEntitlements(): Promise<void> {
       if (item.key === 'HOME_LOCATION' && item.value) {
         this.homeMetroCode = item.value.home_metro_code || null;
         this.homeZipCode = item.value.home_zip_code || null;
-        break; // Stop after finding the HOME_LOCATION
+        break; 
       }
     }
-//    console.log('Get Preferences:', JSON.stringify(userEnt, null,2));
-//    console.log('Extracted homeMetroCode:', this.homeMetroCode);
-//    console.log('Extracted homeZipCode:', this.homeZipCode);
 
 // Hardcoded x-fox-content-entitlement for now which when decoded returns "This is a test string for decoding purposes.".  Needed for getting local fox event information.
 this.contentEntitlement = 'H4sIAAAAAAAA/1TOwQoCMQwE0B9yBffo0YNH/8F202VhNwlNWvv5goIZb/NmSkmz813GrdnGZHY9ui6nb/egVzg5T8l5XgWrXy4pT0UGGDbOkfGNjIX0j9uKJHbkLvm5YyFMSFOpHheXSjDbBfIMWePLg71/8A4AAP///Dq0cBQBAAA=';
@@ -460,14 +419,13 @@ this.contentEntitlement = 'H4sIAAAAAAAA/1TOwQoCMQwE0B9yBffo0YNH/8F202VhNwlNWvv5g
     //   {
     //     headers: {
     //       'User-Agent': androidFoxOneUserAgent,
-    //       'x-fox-apikey': this.appConfig.network.apikey || '', // Ensure apikey is not undefined
-    //       authorization: `Bearer ${this.adobe_prelim_auth_token.accessToken}`, // Ensure token is valid and available
-    //       'x-platform-location': this.platform_location || '', // Ensure platform location is set
-    //       'x-fox-zipcode': this.platform_zip || '', // Ensure zip code is set
+    //       'x-fox-apikey': this.appConfig.network.apikey,
+    //       authorization: `Bearer ${this.adobe_prelim_auth_token.accessToken}`,
+    //       'x-platform-location': this.platform_location || '', 
+    //       'x-fox-zipcode': this.platform_zip || '',
     //       'x-home-zipcode': this.homeZipCode || '',
     //       'x-fox-home-dma': this.homeMetroCode || '',
     //       'x-fox-dma': this.homeMetroCode || '',
-    //       'x-fox-content-entitlement': 'H4sIAAAAAAAA/1TOwQoCMQwE0B9yBffo0YNH/8F202VhNwlNWvv5goIZb/NmSkmz813GrdnGZHY9ui6nb/egVzg5T8l5XgWrXy4pT0UGGDbOkfGNjIX0j9uKJHbkLvm5YyFMSFOpHheXSjDbBfIMWePLg71/8A4AAP///Dq0cBQBAAA=',
     //     },
     //   }
     // );
@@ -533,13 +491,9 @@ this.contentEntitlement = 'H4sIAAAAAAAA/1TOwQoCMQwE0B9yBffo0YNH/8F202VhNwlNWvv5g
       }
 
 //   current CDNs for FOX One: akamai, cloudfront(digitalvideoplatform.com), and maybe fastly
-
-      // let cdn = 'fastly';
       let cdn = 'akamai';
       let data;
 
-      // while (cdn !== 'akamai|limelight|fastly') {
-//      while (cdn === 'fastly') {
       if (cdn === 'akamai' || cdn === 'cloudfront' || cdn === 'fastly') {
         data = await this.getStreamData(eventId);
         cdn = data.stream.CDN;
@@ -551,7 +505,7 @@ this.contentEntitlement = 'H4sIAAAAAAAA/1TOwQoCMQwE0B9yBffo0YNH/8F202VhNwlNWvv5g
 
       const playURL = data.stream.playbackUrl;
 
-      console.log('Stream Data Url Testing Result:', playURL)
+//     console.log('Stream Data Url:', playURL)
 
       if (!playURL) {
         throw new Error('Could not get stream data. Event might be upcoming, ended, or in blackout...');
@@ -592,9 +546,8 @@ this.contentEntitlement = 'H4sIAAAAAAAA/1TOwQoCMQwE0B9yBffo0YNH/8F202VhNwlNWvv5g
         const {data} = await axios.post(
           'https://prod.api.digitalvideoplatform.com/foxdtc/v3.0/watchlive',
 {
-//            capabilities: ['fsdk/yo/v3'],
             asset: {
-              id: eventId, // was streamId for Fox Sports
+              id: eventId,
             },
             device:{
               height: 2160,
@@ -638,58 +591,6 @@ this.contentEntitlement = 'H4sIAAAAAAAA/1TOwQoCMQwE0B9yBffo0YNH/8F202VhNwlNWvv5g
       await this.getAppConfig();
     }
 
-    // get local station call sign
-    let local_station_call_signs_parameter = '';
-    let callsign1 = '';
-    let callsign2 = '';
-
-    try {
-      const {meta} = await db.providers.findOneAsync<IProvider<any, IFoxOneMeta>>({name: 'foxone'});
-      if (!meta.local_station_call_signs || (Array.isArray(meta.local_station_call_signs) && meta.local_station_call_signs.length === 0) || meta.local_station_call_signs === '') {
-        console.log('FOX One detecting local FOX and MyNetwork call signs');
-        let local_station_call_signs: string[] = [];
-        try {
-          const {data} = await axios.get(
-            'https://ent.fox.com/locator/v1/location',
-            {
-              headers: {
-                'User-Agent': userAgent,
-                'x-api-key': EPG_API_KEY,
-              },
-            },
-          );
-          const callSignsArr = data?.data?.results?.[0]?.local_station_call_signs;
-          if (Array.isArray(callSignsArr) && callSignsArr.length > 0) {
-            [callsign1, callsign2] = [
-              callSignsArr[0] || '',
-              callSignsArr[1] || '',
-            ];
-            local_station_call_signs = callSignsArr;
-            local_station_call_signs_parameter = '%2C' + callSignsArr.join(',');
-          } else {
-            console.log('FOX One could not find a local FOX call sign');
-          }
-        } catch (err) {
-          console.log('Error fetching local FOX call signs:', err);
-        }
-        await db.providers.updateAsync({name: 'foxone'}, {$set: {'meta.local_station_call_signs': local_station_call_signs}});
-      } else if (meta.local_station_call_signs !== 'none') {
-        let callSignsArr: string[] = [];
-        if (Array.isArray(meta.local_station_call_signs)) {
-          callSignsArr = meta.local_station_call_signs;
-        } else if (typeof meta.local_station_call_signs === 'string') {
-          callSignsArr = meta.local_station_call_signs.split(',').map(s => s.trim());
-        }
-        local_station_call_signs_parameter = callSignsArr.length > 0 ? '%2C' + callSignsArr.join(',') : '';
-        [callsign1, callsign2] = [
-          callSignsArr[0] || '',
-          callSignsArr[1] || '',
-        ];
-      }
-    } catch (e) {
-      console.log(e);
-    }
-
     const useLinear = await usesLinear();
     const events: IFoxOneEvent[] = [];
 
@@ -711,7 +612,7 @@ try {
       headers: {
         'User-Agent': userAgent,
         authorization: `Bearer ${this.adobe_prelim_auth_token.accessToken}`,
-        'x-fox-apikey': EPG_API_KEY,
+        'x-fox-apikey': this.appConfig.network.apikey,
         'x-platform-location': this.platform_location,
         'x-fox-zipcode': this.platform_zip,
       },
@@ -731,7 +632,7 @@ try {
       headers: {
         'User-Agent': userAgent,
         authorization: `Bearer ${this.adobe_prelim_auth_token.accessToken}`,
-        'x-fox-apikey': EPG_API_KEY,
+        'x-fox-apikey': this.appConfig.network.apikey,
         'x-platform-location': this.platform_location,
         'x-fox-zipcode': this.platform_zip,
         'x-home-zipcode': this.homeZipCode || '',
@@ -756,7 +657,7 @@ try {
           headers: {
             'User-Agent': userAgent,
             authorization: `Bearer ${this.adobe_prelim_auth_token.accessToken}`,
-            'x-fox-apikey': EPG_API_KEY,
+            'x-fox-apikey': this.appConfig.network.apikey,
             'x-platform-location': this.platform_location,
             'x-fox-zipcode': this.platform_zip,
             'x-home-zipcode': this.homeZipCode || '',
@@ -776,7 +677,6 @@ try {
    // Create a flattened list of all events from the nested `items` array
   const allEvents = allContainerData
   .flatMap(container => container.items ?? [])
-  // Look at event.genre_metadata fixes in the future.  This is a placeholder to remove errors for now
   .map(event => {
     if (!event.genre_metadata) {
       // fill with an empty array as default
@@ -784,34 +684,23 @@ try {
     }
     return event;
   });
-//  console.log('All Events:', JSON.stringify(allEvents,null,2));
-  //console.log(`All Events Data (first 5):`, JSON.stringify(allEvents.slice(0, 5), null, 2));
-
   // 6. Use the flattened list for the filtering logic
-  //console.log('Final entitlements before filtering:', this.entitlements);
 
     const uniqueChannels = new Set<string>();
     const channelInfo: any[] = [];
 
   _.forEach(allEvents, m => {
-  // Debug logging
- // console.log(`Processing event: ${m.title}, SKU: ${m.content_sku}`);
-  
   // If content_sku is missing, skip this event
   if (!m.content_sku) {
-    console.log('Skipping event - no content_sku');
+    console.log(`Skipping event - no content_sku: ${m.call_sign}: ${m.description}`);
     return;
   }
 
   // Check if this event's content_sku matches any of our entitlements
-  // We're looking for events that have content_sku matching our entitlements
   const hasEntitlement = this.entitlements.some(entitlement => {
-    // Check if the event's content_sku contains our entitlement (for partial matches)
     return m.content_sku.includes(entitlement) || 
            entitlement.includes(m.content_sku);
   });
-
-  //console.log(`Event ${m.title} has entitlement: ${hasEntitlement}`);
 
   if (
     m.call_sign &&
@@ -824,32 +713,13 @@ try {
     !m.entity_id.includes("-long-")
   ) {
     events.push(m);
-//      console.log(`FOX One Event added: ${m.call_sign}: ${m.title}`); // Use this to test if any local events are being added
     }
-  // Step 4: Collect unique channels for tmsID -- Does not work with linear_channels array
-      if (hasEntitlement) {
-        const channelKey = `${m.call_sign}_${m.network || ''}`;
-        if (!uniqueChannels.has(channelKey)) {
-          uniqueChannels.add(channelKey);
-          channelInfo.push({
-            network: m.network,
-            call_sign: m.call_sign,
-            gracenote: {
-              station_id: m.gracenote?.station_id || null,
-            },
-          });
-        }
-      }
      });
     
-  // console.log('Unique Channels:', channelInfo);
-
 } catch (e) {
   console.error('Error while loading FoxOne events:', e);
 }
-
-// console.log('[FOX One Events]: All filtered events', events);
-return events;
+  return events;
 };
 
   private getAppConfig = async () => {
@@ -890,8 +760,6 @@ return events;
           .map((item: any) => item.contentSku)
           .filter((sku: any) => typeof sku === 'string');
       }
-//      console.log('FOX One entitlements:', this.entitlements);
-
     } catch (e) {
       console.error(e);
     }

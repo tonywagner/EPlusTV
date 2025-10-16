@@ -247,20 +247,20 @@ export const CHANNELS = {
       },
       110: {
         checkChannelEnabled: () => checkChannelEnabled('foxone', 'FOX'),
-        id: 'FOX', // need to figure out how to make dynamic based on location
+        id: 'FOX',
         logo: 'https://tmsimg.fancybits.co/assets/s28719_ll_h15_ac.png?w=360&h=270',
         name: 'FOX',
         stationId: foxStationId, // need to figure out how to make dynamic based on location
         tvgName: `${foxCallSign}-DT`, // need to figure out how to make dynamic based on location
       },
-      // 111: {
-      //   checkChannelEnabled: () => checkChannelEnabled('foxone', 'MNTV'),
-      //   id: 'MNTV', // need to figure out how to make dynamic based on location
-      //   logo: 'https://tmsimg.fancybits.co/assets/GNLZZGG0028Y3ZQ.png?w=360&h=270',
-      //   name: 'MyNetwork TV',
-      //   stationId: mnStationId, // need to figure out how to make dynamic based on location
-      //   tvgName: `${mnCallSign}-DT`, // need to figure out how to make dynamic based on location
-      // },
+      111: {
+        checkChannelEnabled: () => checkChannelEnabled('foxone', 'MNTV'),
+        id: 'MNTV',
+        logo: 'https://tmsimg.fancybits.co/assets/GNLZZGG0028Y3ZQ.png?w=360&h=270',
+        name: 'MyNetwork TV',
+        stationId: mnStationId, // need to figure out how to make dynamic based on location
+        tvgName: `${mnCallSign}-DT`, // need to figure out how to make dynamic based on location
+      },
       112: {
         checkChannelEnabled: () => checkChannelEnabled('foxone', 'FS1'),
         id: 'FS1',
