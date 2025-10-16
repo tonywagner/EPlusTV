@@ -26,7 +26,7 @@ jobs:
       - name: Print a simple message
         run: echo "Using release name and tag ${{ github.ref_name }}"
 
-      - #name: Get latest commit message
+      #- name: Get latest commit message
         #id: get_commit_message
         #run: |
         #  COMMIT_MESSAGE=$(git log -1 --pretty=%B)
