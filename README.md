@@ -88,19 +88,12 @@ Formerly ESPN+. Still available to login with ESPN credentials, but does not pro
 Available to login with FloSports credentials
 
 #### FOXOne
-*** This is currently experimental  ***
 
 Available to login with TV Provider - Direct Subscription or ESPN Subscription Not Currently Supported
 
 ##### Linear Channels
-Using Linear Channels is recommended for FoxOne.  
 
-To get Local Fox and MyNetworkTV Guide Data Environmental Variables Must Be Set:
-FOX_STATION_ID: Local Fox Gracenote Station ID, example: FOX_STATION_ID=20360
-FOX_TVG_NAME: Local Station Call Sign, example: FOX_TVG_NAME=WNYW
-MN_STATION_ID: Local Fox Gracenote Station ID, example: MN_STATION_ID=26566
-MN_TVG_NAME=: Local Station Call Sign, example: MN_TVG_NAME=WWOR
-If no station are defined it will default to New York's Local Stations
+Using Linear Channels is recommended for FoxOne as testing has not been done for non-linear usage.
 
 | Network Name |
 |---|

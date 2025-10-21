@@ -625,11 +625,10 @@ class FoxOneHandler {
     return events;
   };
   
-// Add a getter method that can be awaited
 public getStationMap = async (): Promise<typeof this.stationMap> => {
   try {
-    await this.getEvents();          // <-- may throw
-    console.log('getStationMap call to this.stationMap:', this.stationMap);
+    //await this.getEvents();
+    //console.log('getStationMap call to this.stationMap:', this.stationMap);
     return this.stationMap;
   } catch (e) {
     console.error('getStationMap failed:', e);

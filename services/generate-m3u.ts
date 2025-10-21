@@ -26,11 +26,11 @@ export const generateM3u = async (uri: string, linear = false, excludeGracenote 
       const updatedTvgName = typeof val.tvgName === 'function' ? await val.tvgName() : val.tvgName;
       const updatedStationId = typeof val.stationId === 'function' ? await val.stationId() : val.stationId;
 
-      // if (excludeGracenote && (updatedStationId || updatedTvgName)) {
-      //   continue;
-      // } else if (!excludeGracenote && (!updatedStationId || !updatedTvgName)) {
-      //   continue;
-      // }
+      if (excludeGracenote && (updatedStationId || updatedTvgName)) {
+        continue;
+      } else if (!excludeGracenote && (!updatedStationId || !updatedTvgName)) {
+        continue;
+      }
 
       const channelNum = parseInt(key, 10) + linearStartChannel;
 

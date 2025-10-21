@@ -1,6 +1,6 @@
 import _ from 'lodash';
 
-import {foxOneHandler} from './foxone-handler'; // Import foxOneHandler
+import {foxOneHandler} from './foxone-handler';
 import {db} from './database';
 import {IProvider} from './shared-interfaces';
 import {getLinearStartChannel, usesLinear} from './misc-db-service';
@@ -8,7 +8,6 @@ import {gothamHandler} from './gotham-handler';
 
 async function startApp() {
   await foxOneHandler.initialize(); // Ensures stationMap is populated
-  // ... start the rest of your app ...
 }
 
 export const checkChannelEnabled = async (provider: string, channelId: string): Promise<boolean> => {
@@ -25,21 +24,14 @@ export const checkChannelEnabled = async (provider: string, channelId: string): 
 
 // Function to get dynamic stationId and callSign from foxOneHandler
 const getFoxOneChannelData = async () => {
-  // Make sure the handler is initialized first
-  //await foxOneHandler.initialize();   // <-- if you haven’t called it yet
 
-  // Call the async getter and await the result
   const stationMap = await foxOneHandler.getStationMap();
 
-  // Now you can use `stationMap` (a plain object)
-  console.log('Station Map From CHANNELS.TS:    ',stationMap);
-
-  
+  //console.log('getFoxOneChannelData Station Map:    ', stationMap)
   // Check if stationMap is empty or missing required keys
-  if (!stationMap['FOX'] || !stationMap['MNTV']) {
-    await foxOneHandler.getEvents(); // Populate stationMap if empty
-  }
-    console.log('CHANNELS.TS STATION MAP:    ',stationMap)
+  // if (!stationMap['FOX'] || !stationMap['MNTV']) {
+  //   await foxOneHandler.getEvents(); // Populate stationMap if empty
+  // }
 
   return {
     foxStationId: stationMap['FOX']?.stationId,
