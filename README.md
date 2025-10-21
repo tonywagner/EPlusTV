@@ -2,7 +2,7 @@
   <img src="https://i.imgur.com/FIGZdR3.png">
 </p>
 
-Current version: **4.13.7**
+Current version: **4.13.8**
 
 # About
 This takes programming from various providers and transforms it into a "live TV" experience with virtual linear channels. It will discover what is on, and generate a schedule of channels that will give you M3U and XMLTV files that you can import into something like [Jellyfin](https://jellyfin.org) or [Channels](https://getchannels.com).
@@ -48,7 +48,7 @@ Available to login with TV Provider. Please note that there is no token refresh 
 
 #### ESPN
 
-Available to login with TV Provider
+Limited free content. Also available to login with TV Provider
 
 ##### Linear Channels
 
@@ -62,6 +62,8 @@ Will create dedicated linear channels if using dedicated linear channels, otherw
 | SEC Network | Set if your TV provider supports it |
 | ACC Network | Set if your TV provider supports it |
 | ESPNews | Set if your TV provider supports it |
+| ESPN Deportes | Set if your TV provider supports it |
+| ESPN on ABC | Set if your TV provider supports it |
 
 ##### Digital Networks
 
@@ -70,10 +72,11 @@ Will create dedicated linear channels if using dedicated linear channels, otherw
 | ESPN3 | Set if your TV provider or ISP supports it |
 | SEC Network+ | Set if your TV provider supports it |
 | ACC Network Extra | Set if your TV provider supports it |
+| @ESPN | Available for free |
 
-#### ESPN+
+#### ESPN Account
 
-Available to login with ESPN+ credentials
+Formerly ESPN+. Still available to login with ESPN credentials, but does not provide access to events anymore.
 
 ##### Extras
 | Name | Description |

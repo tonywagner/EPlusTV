@@ -106,6 +106,21 @@ export const ESPNBody: FC<IESPNBodyProps> = ({enabled, tokens, open, channels, m
             </td>
             <td>ACC Network Extra</td>
           </tr>
+          <tr>
+            <td>
+              <input
+                hx-target="this"
+                hx-swap="outerHTML"
+                type="checkbox"
+                checked={meta.espn_free}
+                data-enabled={meta.espn_free ? 'true' : 'false'}
+                hx-put={`/providers/espn/features/toggle/espn_free`}
+                hx-trigger="change"
+                name="channel-enabled"
+              />
+            </td>
+            <td>@ESPN (free)</td>
+          </tr>
         </tbody>
       </table>
       <details open={open}>

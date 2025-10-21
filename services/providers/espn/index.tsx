@@ -22,6 +22,8 @@ const removeEvents = async () => {
 espn.put('/toggle', async c => {
   const body = await c.req.parseBody();
   const enabled = body['espn-enabled'] === 'on';
+  
+  const {meta} = await db.providers.findOneAsync<IProvider<any, IEspnMeta>>({name: 'espn'});
 
   if (!enabled) {
     await db.providers.updateAsync<IProvider, any>({name: 'espn'}, {$set: {enabled, tokens: {}}});
@@ -31,8 +33,6 @@ espn.put('/toggle', async c => {
   }
 
   if ( await espnHandler.ispAccess() ) {
-    const {meta} = await db.providers.findOneAsync<IProvider<any, IEspnMeta>>({name: 'espn'});
-
     await db.providers.updateAsync<IProvider, any>(
       {name: 'espn'},
       {
@@ -43,6 +43,7 @@ espn.put('/toggle', async c => {
             ...meta,
             espn3: enabled,
             espn3isp: true,
+            espn_free: true,
           },
         },
       },
@@ -52,7 +53,28 @@ espn.put('/toggle', async c => {
     scheduleEvents();
 
     return c.html(<Login />, 200, {
-      'HX-Trigger': `{"HXToast":{"type":"success","body":"Successfully enabled ESPN3"}}`,
+      'HX-Trigger': `{"HXToast":{"type":"success","body":"Successfully enabled ESPN3 and @ESPN (free)"}}`,
+    });
+  } else {
+    await db.providers.updateAsync<IProvider, any>(
+      {name: 'espn'},
+      {
+        $set: {
+          enabled: true,
+          tokens: {},
+          meta: {
+            ...meta,
+            espn_free: true,
+          },
+        },
+      },
+    );
+
+    // Kickoff event scheduler
+    scheduleEvents();
+
+    return c.html(<Login />, 200, {
+      'HX-Trigger': `{"HXToast":{"type":"success","body":"Successfully enabled @ESPN (free)"}}`,
     });
   }
 
@@ -148,6 +170,7 @@ espn.put('/features/toggle/:id', async c => {
     accnx: 'ACC Network Extra',
     espn3: 'ESPN3',
     sec_plus: 'SEC Network+',
+    espn_free: '@ESPN (free)',
   };
 
   let updatedMeta = {

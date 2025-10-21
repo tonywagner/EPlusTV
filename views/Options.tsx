@@ -180,7 +180,7 @@ export const Options: FC = async () => {
             <fieldset role="group">
               <input
                 type="text"
-                placeholder="if specified, only include events with matching titles; supports regular expressions"
+                placeholder="if specified, only include events with matching titles; supports regular expressions, use regex101.com for testing"
                 value={titleFilter}
                 data-value={titleFilter}
                 name="title-filter"

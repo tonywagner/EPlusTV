@@ -124,6 +124,7 @@ export interface IEspnMeta {
   accnx?: boolean;
   espn3?: boolean;
   espn3isp?: boolean;
+  espn_free?: boolean;
 }
 
 const ADOBE_KEY = ['g', 'B', '8', 'H', 'Y', 'd', 'E', 'P', 'y', 'e', 'z', 'e', 'Y', 'b', 'R', '1'].join('');
@@ -174,7 +175,7 @@ const BAM_API_KEY = 'ZXNwbiZicm93c2VyJjEuMC4w.ptUt7QxsteaRruuPmGZFaJByOoqKvDP2a5
 const BAM_APP_CONFIG =
   'https://bam-sdk-configs.bamgrid.com/bam-sdk/v2.0/espn-a9b93989/browser/v3.4/linux/chrome/prod.json';
 
-const LINEAR_NETWORKS = ['espn1', 'espn2', 'espnu', 'sec', 'acc', 'espnews'];
+const LINEAR_NETWORKS = ['espn1', 'espn2', 'espnu', 'sec', 'acc', 'espnews', 'espndeportes', 'espnonabc'];
 
 const urlBuilder = (endpoint: string, provider: string) =>
   `${DISNEY_ROOT_URL}${endpoint}`.replace('{id-provider}', provider);
@@ -281,6 +282,15 @@ const getNetworkInfo = (network?: string) => {
     packages = 'null';
   } else if (network === 'espnews') {
     networks = '["1e760a1c-c204-339d-8317-8e615c9cc0e0"]';
+    packages = 'null';
+  } else if (network === 'espndeportes') {
+    networks = '["bba8fb76-57ff-3c63-998b-90fef8f4f8b6"]';
+    packages = 'null';
+  } else if (network === 'espnonabc') {
+    networks = '["c0d547f2-0fb7-4167-a734-105f55890ffc"]';
+    packages = 'null';
+  } else if (network === 'espn_free') {
+    networks = '["8cc0ae94-324d-3123-859f-7b6a229b1b89"]';
     packages = 'null';
   } else if (network === 'espn_ppv') {
     networks = '["d41c5aaf-e100-4726-841f-1e453af347f9"]';
@@ -453,6 +463,8 @@ const isEnabled = async (which?: string): Promise<boolean> => {
     return (linearMeta?.sec_plus ? true : false) && espnLinearEnabled;
   } else if (which === 'accnx') {
     return (linearMeta?.accnx ? true : false) && espnLinearEnabled;
+  } else if (which === 'espn_free') {
+    return (linearMeta?.espn_free ? true : false) && espnLinearEnabled;
   }
 
   return espnPlusEnabled || (espnLinearEnabled && _.some(linear_channels, c => c.enabled));
@@ -606,6 +618,35 @@ class EspnHandler {
     if (useEspnews) {
       console.log('Using ESPNEWS variable is no longer needed. Please use the UI going forward');
     }
+
+    const {linear_channels, meta} = await db.providers.findOneAsync<IProvider>({name: 'espn'});
+	
+    // update/add Deportes and ABC, if necessary
+    if ( linear_channels.length <= 6 ) {
+      linear_channels.push({
+    	  enabled: false,
+        id: 'espndeportes',
+        name: 'ESPN Deportes',
+        tmsId: '71914',
+      });
+      linear_channels.push({
+        enabled: false,
+        id: 'espnonabc',
+        name: 'ESPN on ABC',
+        tmsId: '28708',
+      });
+      await db.providers.updateAsync<IProvider<TESPNTokens>, any>(
+        {name: 'espn'},
+        {
+          $set: {
+            linear_channels: linear_channels,
+          },
+        },
+      );
+    }
+    if ( !('espn_free' in meta) ) {
+      await db.providers.updateAsync({name: 'espn'}, {$set: {meta: {...meta, espn_free: false}}});
+    }
     
     if (await isEnabled('espn3isp') && await isEnabled('espn3')) {
       console.log('Currently expecting ESPN3 access via ISP, re-authenticate if that is no longer true');
@@ -657,6 +698,7 @@ class EspnHandler {
     const secPlusEnabled = await isEnabled('sec_plus');
     const espn3Enabled = await isEnabled('espn3');
     const accnxEnabled = await isEnabled('accnx');
+    const espnFreeEnabled = await isEnabled('espn_free');
 
     const {linear_channels} = await db.providers.findOneAsync<IProvider>({name: 'espn'});
 
@@ -713,6 +755,18 @@ class EspnHandler {
         const liveEntries = await this.getLiveEvents('espnews');
         entries = [...entries, ...liveEntries];
       }
+      if (isChannelEnabled('espndeportes')) {
+        const liveEntries = await this.getLiveEvents('espndeportes');
+        entries = [...entries, ...liveEntries];
+      }
+      if (isChannelEnabled('espnonabc')) {
+        const liveEntries = await this.getLiveEvents('espnonabc');
+        entries = [...entries, ...liveEntries];
+      }
+      if (espnFreeEnabled) {
+        const liveEntries = await this.getLiveEvents('espn_free');
+        entries = [...entries, ...liveEntries];
+      }
       if (espnPpvEnabled) {
         const liveEntries = await this.getLiveEvents('espn_ppv');
         entries = [...entries, ...liveEntries];
@@ -765,6 +819,18 @@ class EspnHandler {
         }
         if (isChannelEnabled('espnews')) {
           const upcomingEntries = await this.getUpcomingEvents(date.format('YYYY-MM-DD'), 'espnews');
+          entries = [...entries, ...upcomingEntries];
+        }
+        if (isChannelEnabled('espndeportes')) {
+          const upcomingEntries = await this.getUpcomingEvents(date.format('YYYY-MM-DD'), 'espndeportes');
+          entries = [...entries, ...upcomingEntries];
+        }
+        if (isChannelEnabled('espnonabc')) {
+          const upcomingEntries = await this.getUpcomingEvents(date.format('YYYY-MM-DD'), 'espnonabc');
+          entries = [...entries, ...upcomingEntries];
+        }
+        if (espnFreeEnabled) {
+          const upcomingEntries = await this.getUpcomingEvents(date.format('YYYY-MM-DD'), 'espn_free');
           entries = [...entries, ...upcomingEntries];
         }
         if (espnPpvEnabled) {
@@ -831,13 +897,17 @@ class EspnHandler {
         let tokenType = 'DEVICE';
         let token = this.adobe_device_id;
 
-        let isEspn3isp = false;
-        if (scenarios?.data?.airing?.network?.id === 'espn3' && (await isEnabled('espn3isp'))) {
-          isEspn3isp = true;
+        let isFree = false;
+        if (
+          (scenarios?.data?.airing?.network?.id === 'espn3' && (await isEnabled('espn3isp') && _.some(scenarios?.data?.airing?.authTypes, (authType: string) => authType.toLowerCase() === 'isp')))
+          ||
+          (scenarios?.data?.airing?.network?.id === 'espn_free' && (await isEnabled('espn_free') && _.some(scenarios?.data?.airing?.authTypes, (authType: string) => authType.toLowerCase() === 'open')))
+        ) {
+          isFree = true;
         }
 
         if (
-          !isEspn3isp &&
+          !isFree &&
           _.some(scenarios?.data?.airing?.authTypes, (authType: string) => authType.toLowerCase() === 'mvpd')
         ) {
           // Try to get the media token, but if it fails, let's just try device authentication
