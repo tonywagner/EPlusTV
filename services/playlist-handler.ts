@@ -17,9 +17,9 @@ const createBaseUrlChunklist = (url: string, network: string): string => {
   const cleaned = url.replace(/\.m3u8.*$/, '');
   let filteredUrl: string[] | string = cleaned.split('/');
 
- if ((network === 'foxsports' || network === 'foxone') && !url.includes('akamai')) {
+  if ((network === 'foxsports' || network === 'foxone') && !url.includes('akamai')) {
   filteredUrl = filteredUrl.filter(seg => !seg.match(/=/));
-}
+  }
 
   filteredUrl = filteredUrl.join('/');
   return filteredUrl.substring(0, filteredUrl.lastIndexOf('/') + 1);
@@ -60,6 +60,204 @@ const getTargetDuration = (chunklist: string, divide = true): number => {
   }
 
   return targetDuration;
+};
+
+const handleDateranges = (playlist: string, network: string): string => {
+  // Regular expression to match #EXT-X-DATERANGE tags
+  const daterangeRegex = /#EXT-X-DATERANGE:(.*?)(\r?\n|$)/g;
+  const dateranges: {
+    start: number;
+    end: number;
+    class: string;
+    params: Record<string, string>;
+    index: number;
+    length: number;
+    ending: string;
+    original: string;
+  }[] = [];
+  let match: RegExpExecArray | null;
+
+  // Parse all DATERANGE tags
+  while ((match = daterangeRegex.exec(playlist)) !== null) {
+    const tagContent = match[1];
+    const original = match[0];
+    const ending = match[2];
+
+    // Parse tag attributes
+    const params = tagContent.split(',').reduce((acc, param) => {
+      const [key, value] = param.split('=');
+      if (key && value) {
+        acc[key.trim()] = value.trim().replace(/^"|"$/g, '');
+      }
+      return acc;
+    }, {} as Record<string, string>);
+
+    // Add CLASS if missing, only for foxone network
+    if (network === 'foxone' && !params['CLASS'] && params['ID']) {
+      params['CLASS'] = params['ID'];
+    }
+
+    // Validate required attributes
+    const startStr = params['START-DATE'] || params['START'];
+    const endStr = params['END-DATE'] || params['END'];
+    const durationStr = params['DURATION'];
+    const classValue = params['CLASS'] || 'no-class'; // Fallback if still no CLASS
+
+    // Parse START, END, and DURATION
+    let start: number, end: number;
+    try {
+      if (startStr) {
+        // Handle ISO 8601 timestamps or numeric
+        start = startStr.includes('T')
+          ? new Date(startStr).getTime() / 1000
+          : parseFloat(startStr);
+
+        if (isNaN(start)) {
+          console.warn(`Skipping invalid DATERANGE with invalid START: ${tagContent}`);
+          continue;
+        }
+
+        // Determine END
+        if (endStr) {
+          end = endStr.includes('T')
+            ? new Date(endStr).getTime() / 1000
+            : parseFloat(endStr);
+        } else if (durationStr) {
+          const duration = parseFloat(durationStr);
+          end = isNaN(duration) ? NaN : start + duration;
+        } else {
+          // Treat as point event if no END or DURATION
+          end = start;
+        }
+
+        if (isNaN(end) || start > end) {
+          console.warn(`Skipping invalid DATERANGE: start=${startStr}, end=${endStr}, duration=${durationStr}, class=${classValue}`);
+          continue;
+        }
+
+        dateranges.push({
+          start,
+          end,
+          class: classValue,
+          params,
+          index: match.index,
+          length: original.length,
+          ending,
+          original,
+        });
+      } else {
+        console.warn(`Skipping DATERANGE with missing START attribute: ${tagContent}`);
+      }
+    } catch (e) {
+      console.error(`Error parsing DATERANGE: ${tagContent}`, e);
+    }
+  }
+
+  // Log parsed DATERANGE tags for debugging
+  // console.log(`Found ${dateranges.length} DATERANGE tags`);
+
+  // Group by CLASS
+  const groups: Record<string, typeof dateranges[0][]> = {};
+  dateranges.forEach(d => {
+    if (!groups[d.class]) {
+      groups[d.class] = [];
+    }
+    groups[d.class].push(d);
+  });
+
+  // Process each group to merge overlaps
+  const replacements: { pos: number; len: number; newStr: string }[] = [];
+
+  Object.values(groups).forEach(group => {
+    if (group.length === 0) return;
+
+    // Sort by start time
+    group.sort((a, b) => a.start - b.start);
+
+    // Log group details
+    // console.log(`Processing group with CLASS="${group[0].class}", count=${group.length}`);
+    // group.forEach(d =>
+    //   console.log(
+    //     `  DATERANGE: start=${d.start}, end=${d.end}, params=${JSON.stringify(d.params)}`
+    //   )
+    // );
+
+    // Merge overlapping ranges
+    const merged: typeof group[0][] = [];
+    let current = { ...group[0] };
+
+    for (let i = 1; i < group.length; i++) {
+      const next = group[i];
+      // Consider ranges overlapping if current.end >= next.start (with epsilon for floating-point)
+      const epsilon = 0.001;
+      if (current.end + epsilon >= next.start) {
+        // Overlap: extend to max end time
+        current.end = Math.max(current.end, next.end);
+        // Merge attributes, prioritizing the first tag's non-time attributes
+        current.params = { ...next.params, ...current.params }; // Prioritize first tag's attributes
+        // console.warn(
+        //   `Merged overlap in DATERANGE with CLASS="${current.class}": ${current.start}-${current.end}`
+        // );
+      } else {
+        merged.push(current);
+        current = { ...next };
+      }
+    }
+    merged.push(current);
+
+    // Generate replacement tags
+    merged.forEach(m => {
+      // Update time-related attributes based on original keys
+      if (m.params['START-DATE']) {
+        m.params['START-DATE'] = new Date(m.start * 1000).toISOString();
+      } else if (m.params['START']) {
+        m.params['START'] = m.start.toString();
+      }
+
+      if (m.params['END-DATE']) {
+        m.params['END-DATE'] = new Date(m.end * 1000).toISOString();
+      } else if (m.params['END']) {
+        m.params['END'] = m.end.toString();
+      } else if (m.params['DURATION']) {
+        m.params['DURATION'] = (m.end - m.start).toString();
+      }
+      // If it was a point event (no END/DURATION originally), don't add them
+
+      const newTagContent = Object.entries(m.params)
+        .map(([k, v]) => {
+          if (k === 'SCTE35-CMD' || k === 'SCTE35-OUT' || k === 'SCTE35-IN') {
+            return `${k}=${v}`;
+          } else {
+            return `${k}="${v}"`;
+          }
+        })
+        .join(',');
+      const newStr = `#EXT-X-DATERANGE:${newTagContent}${m.ending}`;
+      replacements.push({ pos: m.index, len: m.length, newStr });
+    });
+
+    // Remove original tags that were merged away
+    const keptPositions = new Set(merged.map(m => m.index));
+    group.forEach(d => {
+      if (!keptPositions.has(d.index)) {
+        replacements.push({ pos: d.index, len: d.length, newStr: '' });
+      }
+    });
+  });
+
+  // Apply replacements in reverse order to avoid index shifts
+  replacements.sort((a, b) => b.pos - a.pos);
+  let updatedPlaylist = playlist;
+  replacements.forEach(r => {
+    updatedPlaylist = updatedPlaylist.slice(0, r.pos) + r.newStr + updatedPlaylist.slice(r.pos + r.len);
+  });
+
+  // Log final playlist for debugging
+  // console.log('Updated playlist DATERANGE tags:');
+  const finalMatches = updatedPlaylist.match(daterangeRegex) || [];
+  // finalMatches.forEach(m => console.log(m));
+
+  return updatedPlaylist;
 };
 
 const parseReplacementUrl = (url: string, manifestUrl: string): string =>
@@ -119,6 +317,9 @@ export class PlaylistHandler {
         },
       });
 
+      // Preprocess manifest only for foxone to handle DATERANGE tags before parsing
+      const processedManifest = this.network === 'foxone' ? handleDateranges(manifest, this.network) : manifest;
+
       if (resHeaders['set-cookie']) {
         this.overlayCookies = resHeaders['set-cookie'];
       }
@@ -162,7 +363,7 @@ export class PlaylistHandler {
             updatedManifest = updatedManifest.replace(track[1], `${this.baseProxyUrl}${chunklistName}.m3u8`);
           }
         });
-      } else if (this.network !== 'foxsports' && this.network !== 'foxone') {
+      } else if (! (this.network == 'foxsports' || this.network === 'foxone')) {
         const audioTracks = [...manifest.matchAll(reAudioTrack)];
         audioTracks.forEach(track => {
           if (track && track[1]) {
@@ -192,6 +393,7 @@ export class PlaylistHandler {
       });
 
       this.playlist = updatedManifest;
+      //this.playlist = handleDateranges(this.playlist, this.network);
     } catch (e) {
       console.error(e);
       console.log('Could not parse M3U8 properly!');
@@ -221,11 +423,15 @@ export class PlaylistHandler {
         },
       });
 
+      // Preprocess chunklist only for foxone to handle DATERANGE tags before parsing
+      const processedChunklist = this.network === 'foxone' ? handleDateranges(chunkList, this.network) : chunkList;
+
       const realChunklistUrl = request.res.responseUrl;
       const baseManifestUrl = cleanUrl(createBaseUrlChunklist(realChunklistUrl, this.network));
       const keys = new Set<string>();
 
-      const clonedChunklist = updateVersion(chunkList);
+      //const clonedChunklist = updateVersion(chunkList);
+      const clonedChunklist = updateVersion(processedChunklist);
       let updatedChunkList = clonedChunklist;
 
       const chunks = HLS.parse(clonedChunklist);

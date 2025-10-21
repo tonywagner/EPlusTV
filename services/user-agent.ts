@@ -13,7 +13,7 @@ export const androidFoxUserAgent =
   'foxsports-androidtv/3.42.1 (Linux;Android 9.0.0;SHIELD Android TV) ExoPlayerLib/2.12.1';
 
 export const androidFoxOneUserAgent =
-  'foxone-androidtv/1.2.0 (Linux; Android 12; en-us; onn. 4K Streaming Box Build/SGZ1.221127.063.A1.9885170)';
+  'foxone-androidtv/1.3.0 (Linux; Android 12; en-us; onn. 4K Streaming Box Build/SGZ1.221127.063.A1.9885170)';
  // 'foxone-androidtv/1.2.0 (Android 12; en_US; sdk_google_atv64_arm64; Build/STT9.221129.002)';
 
   export const okHttpUserAgent = 'okhttp/4.11.0';

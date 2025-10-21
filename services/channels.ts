@@ -1,9 +1,15 @@
 import _ from 'lodash';
 
+import {foxOneHandler} from './foxone-handler'; // Import foxOneHandler
 import {db} from './database';
 import {IProvider} from './shared-interfaces';
 import {getLinearStartChannel, usesLinear} from './misc-db-service';
 import {gothamHandler} from './gotham-handler';
+
+async function startApp() {
+  await foxOneHandler.initialize(); // Ensures stationMap is populated
+  // ... start the rest of your app ...
+}
 
 export const checkChannelEnabled = async (provider: string, channelId: string): Promise<boolean> => {
   const {enabled, linear_channels} = await db.providers.findOneAsync<IProvider>({name: provider});
@@ -17,10 +23,31 @@ export const checkChannelEnabled = async (provider: string, channelId: string): 
   return network?.enabled;
 };
 
-const foxStationId = process.env.FOX_STATION_ID || '20360';
-const foxCallSign = process.env.FOX_TVG_NAME || 'WNYW;'
-const mnStationId = process.env.MN_STATION_ID || '26566';
-const mnCallSign = process.env.MN_TVG_NAME || 'WWOR';
+// Function to get dynamic stationId and callSign from foxOneHandler
+const getFoxOneChannelData = async () => {
+  // Make sure the handler is initialized first
+  //await foxOneHandler.initialize();   // <-- if you haven’t called it yet
+
+  // Call the async getter and await the result
+  const stationMap = await foxOneHandler.getStationMap();
+
+  // Now you can use `stationMap` (a plain object)
+  console.log('Station Map From CHANNELS.TS:    ',stationMap);
+
+  
+  // Check if stationMap is empty or missing required keys
+  if (!stationMap['FOX'] || !stationMap['MNTV']) {
+    await foxOneHandler.getEvents(); // Populate stationMap if empty
+  }
+    console.log('CHANNELS.TS STATION MAP:    ',stationMap)
+
+  return {
+    foxStationId: stationMap['FOX']?.stationId,
+    foxCallSign: stationMap['FOX']?.callSign,
+    mnStationId: stationMap['MNTV']?.stationId,
+    mnCallSign: stationMap['MNTV']?.callSign,
+  };
+};
 
 /* eslint-disable sort-keys-custom-order-fix/sort-keys-custom-order-fix */
 export const CHANNELS = {
@@ -34,6 +61,7 @@ export const CHANNELS = {
         name: 'ESPN',
         stationId: '32645',
         tvgName: 'ESPNHD',
+        provider: 'espn',
       },
       1: {
         checkChannelEnabled: () => checkChannelEnabled('espn', 'espn2'),
@@ -42,6 +70,7 @@ export const CHANNELS = {
         name: 'ESPN2',
         stationId: '45507',
         tvgName: 'ESPN2HD',
+        provider: 'espn',
       },
       2: {
         checkChannelEnabled: () => checkChannelEnabled('espn', 'espnu'),
@@ -50,6 +79,7 @@ export const CHANNELS = {
         name: 'ESPNU',
         stationId: '60696',
         tvgName: 'ESPNUHD',
+        provider: 'espn',
       },
       3: {
         checkChannelEnabled: () => checkChannelEnabled('espn', 'sec'),
@@ -58,6 +88,7 @@ export const CHANNELS = {
         name: 'SEC Network',
         stationId: '89714',
         tvgName: 'SECH',
+        provider: 'espn',
       },
       4: {
         checkChannelEnabled: () => checkChannelEnabled('espn', 'acc'),
@@ -66,6 +97,7 @@ export const CHANNELS = {
         name: 'ACC Network',
         stationId: '111871',
         tvgName: 'ACC',
+        provider: 'espn',
       },
       5: {
         checkChannelEnabled: () => checkChannelEnabled('espn', 'espnews'),
@@ -74,6 +106,7 @@ export const CHANNELS = {
         name: 'ESPNews',
         stationId: '59976',
         tvgName: 'ESPNWHD',
+        provider: 'espn',
       },
       10: {
         checkChannelEnabled: () => checkChannelEnabled('foxsports', 'fs1'),
@@ -82,6 +115,7 @@ export const CHANNELS = {
         name: 'FS1',
         stationId: '82547',
         tvgName: 'FS1HD',
+        provider: 'foxsports',
       },
       11: {
         checkChannelEnabled: () => checkChannelEnabled('foxsports', 'fs2'),
@@ -90,6 +124,7 @@ export const CHANNELS = {
         name: 'FS2',
         stationId: '59305',
         tvgName: 'FS2HD',
+        provider: 'foxsports',
       },
       12: {
         checkChannelEnabled: () => checkChannelEnabled('foxsports', 'btn'),
@@ -98,6 +133,7 @@ export const CHANNELS = {
         name: 'B1G Network',
         stationId: '58321',
         tvgName: 'BIG10HD',
+        provider: 'foxsports',
       },
       13: {
         checkChannelEnabled: () => checkChannelEnabled('foxsports', 'fox-soccer-plus'),
@@ -106,6 +142,7 @@ export const CHANNELS = {
         name: 'FOX Soccer Plus',
         stationId: '66880',
         tvgName: 'FSCPLHD',
+        provider: 'foxsports',
       },
       14: {
         checkChannelEnabled: () => checkChannelEnabled('foxsports', 'foxdep'),
@@ -114,6 +151,7 @@ export const CHANNELS = {
         name: 'FOX Deportes',
         stationId: '72189',
         tvgName: 'FXDEPHD',
+        provider: 'foxsports',
       },
       20: {
         checkChannelEnabled: () => checkChannelEnabled('paramount', 'cbssportshq'),
@@ -122,6 +160,7 @@ export const CHANNELS = {
         name: 'CBS Sports HQ',
         stationId: '108919',
         tvgName: 'CBSSPHQ',
+        provider: 'paramount',
       },
       21: {
         checkChannelEnabled: () => checkChannelEnabled('paramount', 'golazo'),
@@ -130,6 +169,7 @@ export const CHANNELS = {
         name: 'GOLAZO Network',
         stationId: '133691',
         tvgName: 'GOLAZO',
+        provider: 'paramount',
       },
       30: {
         checkChannelEnabled: () => checkChannelEnabled('nfl', 'NFLNETWORK'),
@@ -138,6 +178,7 @@ export const CHANNELS = {
         name: 'NFL Network',
         stationId: '45399',
         tvgName: 'NFLHD',
+        provider: 'nfl',
       },
       31: {
         checkChannelEnabled: () => checkChannelEnabled('nfl', 'NFLNRZ'),
@@ -146,6 +187,7 @@ export const CHANNELS = {
         name: 'NFL RedZone',
         stationId: '65025',
         tvgName: 'NFLNRZD',
+        provider: 'nfl',
       },
       32: {
         checkChannelEnabled: () => checkChannelEnabled('nfl', 'NFLDIGITAL1_OO_v3'),
@@ -154,6 +196,7 @@ export const CHANNELS = {
         name: 'NFL Channel',
         stationId: '121705',
         tvgName: 'NFLDC1',
+        provider: 'nfl',
       },
       40: {
         checkChannelEnabled: () => checkChannelEnabled('mlbtv', 'MLBTVBI'),
@@ -162,6 +205,7 @@ export const CHANNELS = {
         name: 'MLB Big Inning',
         stationId: '119153',
         tvgName: 'MLBTVBI',
+        provider: 'mlbtv',
       },
       41: {
         checkChannelEnabled: () => checkChannelEnabled('mlbtv', 'MLBN'),
@@ -170,6 +214,7 @@ export const CHANNELS = {
         name: 'MLB Network',
         stationId: '62079',
         tvgName: 'MLBN',
+        provider: 'mlbtv',
       },
       42: {
         checkChannelEnabled: () => checkChannelEnabled('mlbtv', 'SNY'),
@@ -178,6 +223,7 @@ export const CHANNELS = {
         name: 'SportsNet New York',
         stationId: '49603',
         tvgName: 'SNY',
+        provider: 'mlbtv',
       },
       43: {
         checkChannelEnabled: () => checkChannelEnabled('mlbtv', 'SNLA'),
@@ -186,6 +232,7 @@ export const CHANNELS = {
         name: 'Spectrum SportsNet LA HD',
         stationId: '87024',
         tvgName: 'SNLA',
+        provider: 'mlbtv',
       },
       ...gothamHandler.getLinearChannels(),
       70: {
@@ -196,12 +243,14 @@ export const CHANNELS = {
         name: "Women's Sports Network",
         stationId: '124636',
         tvgName: 'WSN',
+        provider: 'wsn',
       },
       80: {
         checkChannelEnabled: () => checkChannelEnabled('nwsl', 'NWSL+'),
         id: 'NWSL+',
         logo: 'https://img.dge-prod.dicelaboratory.com/original/2024/11/22101220-tgwkrv9kdmvdqo2o.png',
         name: 'NWSL+ 24/7',
+        provider: 'nwsl',
       },
       90: {
         checkChannelEnabled: () => checkChannelEnabled('bally', 'STADIUM'),
@@ -210,24 +259,28 @@ export const CHANNELS = {
         name: 'Stadium HD',
         stationId: '104950',
         tvgName: 'STADIUM',
+        provider: 'bally',
       },
       91: {
         checkChannelEnabled: () => checkChannelEnabled('bally', 'MiLB'),
         id: 'MiLB',
         logo: 'https://assets-stratosphere.cdn.ballys.tv/images/MiLB_New_Logo_23.png',
         name: 'MiLB',
+        provider: 'bally',
       },
       92: {
         checkChannelEnabled: () => checkChannelEnabled('bally', 'bananaball'),
         id: 'bananaball',
         logo: 'https://assets-stratosphere.cdn.ballys.tv/images/BananaBall_SB_01.png',
         name: 'Banana Ball',
+        provider: 'bally',
       },
       93: {
         checkChannelEnabled: () => checkChannelEnabled('bally', 'ballypoker'),
         id: 'ballypoker',
         logo: 'https://assets-stratosphere.ballys.tv/images/BallyPoker_Channel_V3.png',
         name: 'Bally Poker',
+        provider: 'bally',
       },
       94: {
         checkChannelEnabled: () => checkChannelEnabled('bally', 'GLORY'),
@@ -236,6 +289,7 @@ export const CHANNELS = {
         name: 'GLORY Kickboxing',
         stationId: '131359',
         tvgName: 'GLORY',
+        provider: 'bally',
       },
       100: {
         checkChannelEnabled: () => checkChannelEnabled('outside', 'OTVSTR'),
@@ -244,22 +298,25 @@ export const CHANNELS = {
         name: 'Outside',
         stationId: '114313',
         tvgName: 'OTVSTR',
+        provider: 'outside',
       },
       110: {
         checkChannelEnabled: () => checkChannelEnabled('foxone', 'FOX'),
         id: 'FOX',
         logo: 'https://tmsimg.fancybits.co/assets/s28719_ll_h15_ac.png?w=360&h=270',
         name: 'FOX',
-        stationId: foxStationId, // need to figure out how to make dynamic based on location
-        tvgName: `${foxCallSign}-DT`, // need to figure out how to make dynamic based on location
+        stationId: async() => (await getFoxOneChannelData()).foxStationId,
+        tvgName: async () => `${(await getFoxOneChannelData()).foxCallSign}`,
+        provider: 'foxone',
       },
       111: {
         checkChannelEnabled: () => checkChannelEnabled('foxone', 'MNTV'),
         id: 'MNTV',
         logo: 'https://tmsimg.fancybits.co/assets/GNLZZGG0028Y3ZQ.png?w=360&h=270',
         name: 'MyNetwork TV',
-        stationId: mnStationId, // need to figure out how to make dynamic based on location
-        tvgName: `${mnCallSign}-DT`, // need to figure out how to make dynamic based on location
+        stationId: async () => (await getFoxOneChannelData()).mnStationId, // Dynamic stationId
+        tvgName: async () => `${(await getFoxOneChannelData()).mnCallSign}`, // Dynamic callSign
+        provider: 'foxone',
       },
       112: {
         checkChannelEnabled: () => checkChannelEnabled('foxone', 'FS1'),
@@ -268,6 +325,7 @@ export const CHANNELS = {
         name: 'FS1',
         stationId: '82547',
         tvgName: 'FS1HD',
+        provider: 'foxone',
       },
       113: {
         checkChannelEnabled: () => checkChannelEnabled('foxone', 'FS2'),
@@ -276,6 +334,7 @@ export const CHANNELS = {
         name: 'FS2',
         stationId: '59305',
         tvgName: 'FS2HD',
+        provider: 'foxone',
       },
       114: {
         checkChannelEnabled: () => checkChannelEnabled('foxone', 'Big Ten Network'),
@@ -284,6 +343,7 @@ export const CHANNELS = {
         name: 'B1G Network',
         stationId: '58321',
         tvgName: 'BIG10HD',
+        provider: 'foxone',
       },
       115: {
         checkChannelEnabled: () => checkChannelEnabled('foxone', 'FOX Deportes'),
@@ -292,6 +352,7 @@ export const CHANNELS = {
         name: 'FOX Deportes',
         stationId: '72189',
         tvgName: 'FXDEPHD',
+        provider: 'foxone',
       }, 
         116: {
         checkChannelEnabled: () => checkChannelEnabled('foxone', 'FOX News'),
@@ -300,6 +361,7 @@ export const CHANNELS = {
         name: 'FOX News Channel',
         stationId: '60179',
         tvgName: 'FNCHD',
+        provider: 'foxone',
       },
         117: {
         checkChannelEnabled: () => checkChannelEnabled('foxone', 'FOX Business'),
@@ -308,6 +370,7 @@ export const CHANNELS = {
         name: 'FOX Business Network',
         stationId: '58718',
         tvgName: 'FBNHD',
+        provider: 'foxone',
       },
         118: {
         checkChannelEnabled: () => checkChannelEnabled('foxone', 'TMZ'),
@@ -316,6 +379,7 @@ export const CHANNELS = {
         name: 'TMZ',
         stationId: '149408',
         tvgName: 'TMZFAST',
+        provider: 'foxone',
       },
       119: {
         checkChannelEnabled: () => checkChannelEnabled('foxone', 'FOX Digital'),
@@ -324,6 +388,7 @@ export const CHANNELS = {
         name: 'Masked Singer',
         stationId: '192070',
         tvgName: 'FMSCFO',
+        provider: 'foxone',
       }, 
       120: {
         checkChannelEnabled: () => checkChannelEnabled('foxone', 'FOX Soul'),
@@ -332,6 +397,7 @@ export const CHANNELS = {
         name: 'Fox Soul',
         stationId: '119212',
         tvgName: 'FOXSOUL',
+        provider: 'foxone',
       },
       121: {
         checkChannelEnabled: () => checkChannelEnabled('foxone', 'FOX Weather'),
@@ -340,6 +406,7 @@ export const CHANNELS = {
         name: 'Fox Weather',
         stationId: '121307',
         tvgName: 'FWX',
+        provider: 'foxone',
       },
       122: {
         checkChannelEnabled: () => checkChannelEnabled('foxone', 'FOX LOCAL'),
@@ -348,6 +415,7 @@ export const CHANNELS = {
         name: 'Fox Live Now',
         stationId: '119219',
         tvgName: 'LIVENOW',
+        provider: 'foxone',
       },                     
     };
   },
@@ -394,3 +462,8 @@ export const calculateChannelFromName = async (channelName: string): Promise<num
 };
 
 export const XMLTV_PADDING = process.env.XMLTV_PADDING?.toLowerCase() === 'false' ? false : true;
+export interface Channel {
+  stationId: () => Promise<string>;
+  tvgName: () => Promise<string>;
+}
+

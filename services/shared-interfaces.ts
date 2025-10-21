@@ -62,6 +62,7 @@ export interface IProviderChannel {
   name: string;
   tmsId?: string;
   id: string;
+  callSign?: string;
 }
 
 export interface IProvider<T = any, M = any> {

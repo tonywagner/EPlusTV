@@ -18,19 +18,19 @@ import {usesLinear} from './misc-db-service';
 interface IAppConfig {
   network: {
     identity: {
-      host: string; // this is the base url -- need to slice the trailing '/' off
-      entitlementsUrl: string; 
-      regcodeUrl: string; 
+      host: string;
+      entitlementsUrl: string;
+      regcodeUrl: string;
       checkAdobeUrl: string;
       loginUrl: string;
     };
     auth: {
-      loginWebsiteUrl: string; // returns go.foxone.com -- DO NOT USE - should be go.fox.com
+      loginWebsiteUrl: string;
     };
-    apikey: string; // was key
+    apikey: string;
   };
   playback: {
-    baseApiUrl: string; 
+    baseApiUrl: string;
   };
 }
 
@@ -64,14 +64,11 @@ interface IFoxOneEvent {
     series_detail?: string;
     series_list?: string;
   };
-  isUHD?: boolean;
-  is_multiview?: boolean;
-}
-
-interface IFoxOneEventsData {
-  data: {
-      items: IFoxOneEvent[];
+  gracenote: {
+    station_id?: string;
   };
+  is_uhd?: boolean;
+  is_multiview?: boolean;
 }
 
 interface IFoxOneMeta {
@@ -88,7 +85,7 @@ const getMaxRes = (res: string) => {
     case 'UHD/HDR':
       return 'UHD/HDR';
     default:
-      return 'HD'; // was 720p before
+      return 'HD';
   }
 };
 
@@ -104,10 +101,12 @@ const parseCategories = (event: IFoxOneEvent) => {
     categories.push(event.sport_uri);
   }
 
-  if (event.stream_types?.find(resolution => resolution === 'HDR' || resolution === 'SDR') || event.isUHD) {
+  const hasHDRorSDR = event.stream_types?.some(res => res === 'HDR' || res === 'SDR');
+  const isUHD = event.is_uhd;
+
+  if (hasHDRorSDR || isUHD) {
     categories.push('4K');
   }
-
   return [...new Set(categories)];
 };
 
@@ -126,7 +125,7 @@ const parseAirings = async (events: IFoxOneEvent[]) => {
       const end = moment(event.end_time);
       const originalEnd = moment(event.end_time);
 
-      const isLinear = useLinear; 
+      const isLinear = useLinear;
 
       if (end.isBefore(now) || start.isAfter(inTwoDays)) {
         continue;
@@ -137,7 +136,7 @@ const parseAirings = async (events: IFoxOneEvent[]) => {
       if (meta.only4k && !_.some(categories, category => category === '4K')) {
         continue;
       }
-      
+
       const eventName = `${event.sport_uri === 'NFL' ? `${event.sport_uri} - ` : ''}${event.title}`;
 
       console.log(`Adding event: ${event.call_sign}: ${eventName}`);
@@ -163,8 +162,7 @@ const parseAirings = async (events: IFoxOneEvent[]) => {
   }
 };
 
-const FOXONE_APP_CONFIG = 'https://config.foxplus.com/androidtv/1.2/config/info.json';
-
+const FOXONE_APP_CONFIG = 'https://config.foxplus.com/androidtv/1.3/config/info.json';
 // Will prelim token expire in the next month?
 const willPrelimTokenExpire = (token: IAdobePrelimAuthToken): boolean =>
   new Date().valueOf() + 3600 * 1000 * 24 * 30 > (token?.tokenExpiration || 0);
@@ -173,10 +171,9 @@ const willAuthTokenExpire = (token: IAdobeAuthFoxOne): boolean =>
   new Date().valueOf() + 3600 * 1000 * 24 > (token?.tokenExpiration || 0);
 
 const checkEventSku = (entitlements, event: IFoxOneEvent): boolean => {
-  if ( event.content_sku && Array.isArray(entitlements) ) {
+  if (event.content_sku && Array.isArray(entitlements)) {
     return true;
-    };
-
+  }
   return false;
 };
 
@@ -184,7 +181,7 @@ class FoxOneHandler {
   public adobe_device_id?: string;
   public adobe_prelim_auth_token?: IAdobePrelimAuthToken;
   public adobe_auth?: IAdobeAuthFoxOne;
-  
+
   private platform_location?: string;
   private platform_zip?: string;
   private contentEntitlement?: string;
@@ -194,8 +191,7 @@ class FoxOneHandler {
   private entArray: string[] = [];
   private contentEnt: any;
   private appConfig: IAppConfig;
-  private foxStationId = process.env.FOX_STATION_ID || '20360';
-  private mnStationId = process.env.MN_STATION_ID || '26566';
+  private stationMap: { [key: string]: { network: string; stationId: string; callSign: string } } = {}; // Add stationMap as a class property
 
   public initialize = async () => {
     const setup = (await db.providers.countAsync({name: 'foxone'})) > 0 ? true : false;
@@ -212,95 +208,97 @@ class FoxOneHandler {
       }
 
       await db.providers.insertAsync<IProvider<TFoxOneTokens, IFoxOneMeta>>({
-      enabled: useFoxOne,
-      linear_channels: [
-        {
-          enabled: true,
-          id: 'FOX', 
-          name: 'FOX',
-          tmsId: this.foxStationId, 
+        enabled: useFoxOne,
+        linear_channels: [
+          {
+            enabled: true,
+            id: 'FOX',
+            name: 'FOX',
+            tmsId: '',
+            callSign: '',
+          },
+          {
+            enabled: true,
+            id: 'MNTV',
+            name: 'MyNetwork TV',
+            tmsId: '',
+            callSign: '',
+          },
+          {
+            enabled: true,
+            id: 'FS1',
+            name: 'FS1',
+            tmsId: '82547',
+          },
+          {
+            enabled: true,
+            id: 'FS2',
+            name: 'FS2',
+            tmsId: '59305',
+          },
+          {
+            enabled: true,
+            id: 'Big Ten Network',
+            name: 'B1G Network',
+            tmsId: '58321',
+          },
+          {
+            enabled: true,
+            id: 'FOX Deportes',
+            name: 'FOX Deportes',
+            tmsId: '72189',
+          },
+          {
+            enabled: true,
+            id: 'FOX News',
+            name: 'FOX News Channel',
+            tmsId: '60179',
+          },
+          {
+            enabled: true,
+            id: 'FOX Business',
+            name: 'FOX Business Network',
+            tmsId: '58718',
+          },
+          {
+            enabled: true,
+            id: 'TMZ',
+            name: 'TMZ',
+            tmsId: '149408',
+          },
+          {
+            enabled: true,
+            id: 'FOX Digital',
+            name: 'Masked Singer',
+            tmsId: '192070',
+          },
+          {
+            enabled: true,
+            id: 'FOX Soul',
+            name: 'Fox Soul',
+            tmsId: '119212',
+          },
+          {
+            enabled: true,
+            id: 'FOX Weather',
+            name: 'Fox Weather',
+            tmsId: '121307',
+          },
+          {
+            enabled: true,
+            id: 'FOX LOCAL',
+            name: 'Fox Live Now',
+            tmsId: '119219',
+          },
+        ],
+        meta: {
+          only4k: useFoxOneOnly4k,
+          uhd: getMaxRes(process.env.MAX_RESOLUTION) === 'UHD/HDR',
+          local_station_call_signs: '',
         },
-        {
-          enabled: true,
-          id: 'MNTV', 
-          name: 'MyNetwork TV',
-          tmsId: this.mnStationId, 
-        },
-        {
-          enabled: true,
-          id: 'FS1', 
-          name: 'FS1',
-          tmsId: '82547',
-        },
-        {
-          enabled: true,
-          id: 'FS2', 
-          name: 'FS2',
-          tmsId: '59305',
-        },
-        {
-          enabled: true,
-          id: 'Big Ten Network', 
-          name: 'B1G Network',
-          tmsId: '58321',
-        },
-        {
-          enabled: true,
-          id: 'FOX Deportes', 
-          name: 'FOX Deportes',
-          tmsId: '72189',
-        },
-        {
-          enabled: true,
-          id: 'FOX News', 
-          name: 'FOX News Channel',
-          tmsId: '60179',
-        },
-        {
-          enabled: true,
-          id: 'FOX Business', 
-          name: 'FOX Business Network',
-          tmsId: '58649',
-        },
-        {
-          enabled: true,
-          id: 'TMZ', 
-          name: 'TMZ',
-          tmsId: '149408',
-        },
-        {
-          enabled: true,
-          id: 'FOX Digital', 
-          name: 'Masked Singer',
-          tmsId: '192070',
-        },
-        {
-          enabled: true,
-          id: 'FOX Soul', 
-          name: 'Fox Soul',
-          tmsId: '119212',
-        },
-        {
-          enabled: true,
-          id: 'FOX Weather',
-          name: 'Fox Weather',
-          tmsId: '121307',
-        },
-                {
-          enabled: true,
-          id: 'FOX LOCAL',
-          name: 'Fox Live Now',
-          tmsId: '119219',
-        },
-      ],
-      meta: {
-        only4k: useFoxOneOnly4k,
-        uhd: getMaxRes(process.env.MAX_RESOLUTION) === 'UHD/HDR',
-        local_station_call_signs: '',
-      },
-      name: 'foxone',
-      tokens: data,
-    });
+        name: 'foxone',
+        tokens: data,
+      });
 
       if (fs.existsSync(foxOneConfigPath)) {
         fs.rmSync(foxOneConfigPath);
@@ -317,139 +315,426 @@ class FoxOneHandler {
       console.log('Using MAX_RESOLUTION variable is no longer needed. Please use the UI going forward');
     }
 
-    const {enabled, meta, linear_channels} = await db.providers.findOneAsync<IProvider>({name: 'foxone'});
-	                 
-      await db.providers.updateAsync<IProvider<TFoxOneTokens>, any>(
-        {name: 'foxone'},
-        {
-          $set: {
-            linear_channels: linear_channels,
-          },
-        },
-      );
-    
+    const {enabled} = await db.providers.findOneAsync<IProvider<TFoxOneTokens, IFoxOneMeta>>({name: 'foxone'});
 
     if (!enabled) {
       return;
-};
-// Load tokens from local file and make sure they are valid
+    }
+
+    // Load tokens from local file and make sure they are valid
     await this.load();
 
     await this.getEntitlements();
+    
+    // Update linear_channels during initialization
+    await this.getEvents();
   };
 
-  public async getLocation(): Promise<void> {
-  // Get platform location and zip code from FOX locator API
-  const { data: locatorData } = await axios.get<any>(
-    'https://ent.fox.com/locator/v1/location',
-    {
-      headers: {
-        'User-Agent': androidFoxOneUserAgent,
-        'x-api-key': this.appConfig.network.apikey,
-      },
-    }
-  );
-
-  // Extract the actual location data from the metadata
-    const locationData = locatorData?.data?.metadata;
-    const zipCodeData = (locatorData?.data?.results || []) [0];
-    
-  // Also set the original properties for backward compatibility
-    this.platform_location = locationData?.['x-platform-location'] || 'Unknown Location';
-    this.platform_zip = zipCodeData?.['zip_code'] || '00000';
-
-  }
-
-public async getUserEntitlements(): Promise<void> {
-  try {
-
-    // Ensure necessary configurations are loaded
-    await this.getLocation();
-
+  public getEvents = async (): Promise<IFoxOneEvent[]> => {
     if (!this.appConfig) {
       await this.getAppConfig();
     }
 
+    const useLinear = await usesLinear();
+    const events: IFoxOneEvent[] = [];
+
+    const [now, inTwoDays] = normalTimeRange();
+
+    const startTime = now.unix();
+    const endTime = inTwoDays.unix();
+
     try {
-    const response = await axios.put(
-      'https://ent.fox.com/user-preferences/v1/home-location',
-      { home_zip_code: this.platform_zip },
-      {
-        headers: {
-          'user-agent': androidFoxOneUserAgent,
-          'authorization': `bearer ${this.adobe_auth.accessToken}`,
-          'x-api-key': this.appConfig.network.apikey,
-          'content-type': 'application/json'
+      await this.getLocation();
+      await this.getEntitlements();
+      await this.getUserEntitlements();
+
+      const { data: initData } = await axios.get<any>(
+        'https://api.fox.com/dtc/product/config/v1/init',
+        {
+          headers: {
+            'User-Agent': androidFoxOneUserAgent,
+            authorization: `Bearer ${this.adobe_prelim_auth_token.accessToken}`,
+            'x-fox-apikey': this.appConfig.network.apikey,
+            'x-platform-location': this.platform_location,
+            'x-fox-zipcode': this.platform_zip,
+            'x-home-zipcode': this.homeZipCode || '',
+            'x-fox-home-dma': this.homeMetroCode || '',
+            'x-fox-dma': this.homeMetroCode || '',
+            'x-fox-content-entitlement': this.contentEntitlement || '',
+            'x-fox-userauth': `Bearer ${this.adobe_prelim_auth_token.accessToken}`,
+          },
+        },
+      );
+
+      const navigationUri = initData?.data?.dynamic_uris?.navigation_uri;
+
+      if (!navigationUri) {
+        throw new Error('navigation_uri not found in init data');
+      }
+
+      const { data: navData } = await axios.get<any>(
+        `https://api.fox.com/dtc${navigationUri}?page=1&size=25`,
+        {
+          headers: {
+            'User-Agent': androidFoxOneUserAgent,
+            authorization: `Bearer ${this.adobe_prelim_auth_token.accessToken}`,
+            'x-fox-apikey': this.appConfig.network.apikey,
+            'x-platform-location': this.platform_location,
+            'x-fox-zipcode': this.platform_zip,
+            'x-home-zipcode': this.homeZipCode || '',
+            'x-fox-home-dma': this.homeMetroCode || '',
+            'x-fox-dma': this.homeMetroCode || '',
+            'x-fox-content-entitlement': this.contentEntitlement || '',
+            'x-fox-userauth': `Bearer ${this.adobe_prelim_auth_token.accessToken}`,
+          },
+        },
+      );
+
+      let lSchedUri: string | undefined = undefined;
+
+      if (navData.data?.items) {
+        for (const item of navData.data.items) {
+          if (item.subitems) {
+            for (const subitem of item.subitems) {
+              if (subitem.subitems) {
+                const foundDeepSubitem = subitem.subitems.find(
+                  (deepSub: any) => deepSub.item_key === "guide"
+                );
+
+                if (foundDeepSubitem) {
+                  lSchedUri = foundDeepSubitem.page_uri;
+                  break;
+                }
+              }
+            }
+          }
+          if (lSchedUri) {
+            break;
+          }
         }
       }
-    );
+      const liveScheduleUri = lSchedUri;
 
-  } catch (error) {
-    console.error('Error updating zip code:', error.response?.data || error.message);
-    throw error;
-  }
-    const { data: userEnt } = await axios.get<any>(
-      'https://ent.fox.com/user-preferences/v1/preferences',
-      {
-        headers: {
-          'User-Agent': androidFoxOneUserAgent,
-          'x-api-key': this.appConfig.network.apikey || '',
-          authorization: `Bearer ${this.adobe_prelim_auth_token.accessToken}`,
-          'x-platform-location': this.platform_location || '',
+      if (!liveScheduleUri) {
+        throw new Error('live_schedule_page_uri not found in init data');
+      }
+
+      const { data: scheduleData } = await axios.get<any>(
+        `https://api.fox.com/dtc${liveScheduleUri}`,
+        {
+          headers: {
+            'User-Agent': androidFoxOneUserAgent,
+            authorization: `Bearer ${this.adobe_prelim_auth_token.accessToken}`,
+            'x-fox-apikey': this.appConfig.network.apikey,
+            'x-platform-location': this.platform_location,
+            'x-fox-zipcode': this.platform_zip,
+            'x-home-zipcode': this.homeZipCode || '',
+            'x-fox-home-dma': this.homeMetroCode || '',
+            'x-fox-dma': this.homeMetroCode || '',
+            'x-fox-content-entitlement': this.contentEntitlement || '',
+            'x-fox-userauth': `Bearer ${this.adobe_prelim_auth_token.accessToken}`,
+          },
         },
-      }
-    );
+      );
 
-    // Extract home_metro_code and home_zip_code
-    const results = userEnt?.data?.results || [];
-    for (const item of results) {
-      if (item.key === 'HOME_LOCATION' && item.value) {
-        this.homeMetroCode = item.value.home_metro_code || null;
-        this.homeZipCode = item.value.home_zip_code || null;
-        break; 
+      const containerUris: string[] =
+        scheduleData?.data.containers?.map((c: any) => c.uri) || [];
+
+      const allContainerData: any[] = [];
+
+      for (const uri of containerUris) {
+        try {
+          const { data } = await axios.get<any>(
+            `https://api.fox.com/dtc${uri}`,
+            {
+              headers: {
+                'User-Agent': androidFoxOneUserAgent,
+                authorization: `Bearer ${this.adobe_prelim_auth_token.accessToken}`,
+                'x-fox-apikey': this.appConfig.network.apikey,
+                'x-platform-location': this.platform_location,
+                'x-fox-zipcode': this.platform_zip,
+                'x-home-zipcode': this.homeZipCode || '',
+                'x-fox-home-dma': this.homeMetroCode || '',
+                'x-fox-dma': this.homeMetroCode || '',
+                'x-fox-content-entitlement': this.contentEntitlement || '',
+                'x-fox-userauth': `Bearer ${this.adobe_prelim_auth_token.accessToken}`,
+              },
+            },
+          );
+
+          if (data?.data?.items && Array.isArray(data.data.items)) {
+            allContainerData.push(...data.data.items);
+          } else {
+            console.warn(`No items found in container ${uri}`);
+          }
+
+        } catch (err) {
+          console.warn(`Failed to fetch container ${uri}:`, err);
+        }
       }
+
+      const allEntityIds: string[] = allContainerData
+        .filter(item => item && typeof item === 'object' && item.entity_id)
+        .map(item => item.entity_id);
+
+      const allEvents = allContainerData.map(event => {
+        if (!event.genre_metadata) {
+          event.genre_metadata = [];
+        }
+        return event;
+      });
+
+      const stationMap = {};
+      for (const event of allEvents) {
+        const { call_sign, network, gracenote } = event;
+
+        if (call_sign && network && gracenote?.station_id) {
+          if (!stationMap[network]) {
+            stationMap[network] = {
+              network,
+              stationId: gracenote.station_id,
+              callSign: call_sign,
+            };
+          }
+        }
+      }
+      this.stationMap = stationMap;
+      //console.log('station Mapping:    ', stationMap);
+
+      // Update linear_channels with static tmsId except for FOX and MNTV
+      await db.providers.updateAsync<IProvider<TFoxOneTokens, IFoxOneMeta>, any>(
+        {name: 'foxone'},
+        {
+          $set: {
+            linear_channels: [
+              {
+                enabled: true,
+                id: 'FOX',
+                name: 'FOX',
+                tmsId: this.stationMap['FOX']?.stationId,
+                callSign: this.stationMap['FOX']?.callSign,
+              },
+              {
+                enabled: true,
+                id: 'MNTV',
+                name: 'MyNetwork TV',
+                tmsId: this.stationMap['MNTV']?.stationId,
+                callSign: this.stationMap['MNTV']?.callSign,
+              },
+              {
+                enabled: true,
+                id: 'FS1',
+                name: 'FS1',
+                tmsId: '82547',
+              },
+              {
+                enabled: true,
+                id: 'FS2',
+                name: 'FS2',
+                tmsId: '59305',
+              },
+              {
+                enabled: true,
+                id: 'Big Ten Network',
+                name: 'B1G Network',
+                tmsId: '58321',
+              },
+              {
+                enabled: true,
+                id: 'FOX Deportes',
+                name: 'FOX Deportes',
+                tmsId: '72189',
+              },
+              {
+                enabled: true,
+                id: 'FOX News',
+                name: 'FOX News Channel',
+                tmsId: '60179',
+              },
+              {
+                enabled: true,
+                id: 'FOX Business',
+                name: 'FOX Business Network',
+                tmsId: '58718',
+              },
+              {
+                enabled: true,
+                id: 'TMZ',
+                name: 'TMZ',
+                tmsId: '149408',
+              },
+              {
+                enabled: true,
+                id: 'FOX Digital',
+                name: 'Masked Singer',
+                tmsId: '192070',
+              },
+              {
+                enabled: true,
+                id: 'FOX Soul',
+                name: 'Fox Soul',
+                tmsId: '119212',
+              },
+              {
+                enabled: true,
+                id: 'FOX Weather',
+                name: 'Fox Weather',
+                tmsId: '121307',
+              },
+              {
+                enabled: true,
+                id: 'FOX LOCAL',
+                name: 'Fox Live Now',
+                tmsId: '119219',
+              },
+            ],
+          },
+        },
+      );
+      //console.log('getEvents: Updated linear_channels with stationMap');
+      const provider = await db.providers.findOneAsync({name: 'foxone'});
+      //console.log('linear_channels:', provider.linear_channels);
+
+      _.forEach(allEvents, m => {
+        if (!m.content_sku) {
+          return;
+        }
+
+        const hasEntitlement = this.entitlements.some(entitlement => {
+          return m.content_sku.includes(entitlement) ||
+                 entitlement.includes(m.content_sku);
+        });
+
+        if (
+          m.call_sign &&
+          hasEntitlement &&
+          m.is_multiview !== true &&
+          !m.audio_only &&
+          m.start_time &&
+          m.end_time &&
+          m.entity_id &&
+          !m.entity_id.includes("-long-")
+        ) {
+          events.push(m);
+        }
+      });
+
+    } catch (e) {
+      console.error('Error while loading FoxOne events:', e);
     }
-
+    return events;
+  };
   
-//This block is used to get x-fox-content-entitlement and store it in this.contentEntitlement
-    const { data: userData } = await axios.post<any>(
-      'https://api.fox.com/dtc/product/config/v1/keygen/secondary_info',
-      this.contentEnt, 
+// Add a getter method that can be awaited
+public getStationMap = async (): Promise<typeof this.stationMap> => {
+  try {
+    await this.getEvents();          // <-- may throw
+    console.log('getStationMap call to this.stationMap:', this.stationMap);
+    return this.stationMap;
+  } catch (e) {
+    console.error('getStationMap failed:', e);
+    throw e;
+  }
+};
+
+
+  public async getLocation(): Promise<void> {
+    const { data: locatorData } = await axios.get<any>(
+      'https://ent.fox.com/locator/v1/location',
       {
         headers: {
           'User-Agent': androidFoxOneUserAgent,
-          'x-fox-apikey': this.appConfig.network.apikey,
-          authorization: `Bearer ${this.adobe_prelim_auth_token.accessToken}`,
-          'x-platform-location': this.platform_location || '', 
-          'x-fox-zipcode': this.platform_zip || '',
-          'x-home-zipcode': this.homeZipCode || '',
-          'x-fox-home-dma': this.homeMetroCode || '',
-          'x-fox-dma': this.homeMetroCode || '',
+          'x-api-key': this.appConfig.network.apikey,
         },
       }
     );
 
-     // Extract and store x-fox-content-entitlement
-    const headers = userData?.data?.headers || [];
-    const entitlementHeader = headers.find((h: any) => h.key === 'x-fox-content-entitlement');
+    const locationData = locatorData?.data?.metadata;
+    const zipCodeData = (locatorData?.data?.results || [])[0];
 
-    if (entitlementHeader && entitlementHeader.value) {
-      this.contentEntitlement = entitlementHeader.value;
-      //console.log('Stored x-fox-content-entitlement:', this.contentEntitlement);
-    } else {
-      console.warn('x-fox-content-entitlement not found in response');
-    }
-
-    //console.log('User Data Call response received.');
-    //console.log('User Data:', JSON.stringify(userData, null, 2)); // Should display the response data or empty object if no data
-
-  } catch (e) {
-    console.error('Error in getUserEntitlements:', e); // Log error for debugging
+    this.platform_location = locationData?.['x-platform-location'] || 'Unknown Location';
+    this.platform_zip = zipCodeData?.['zip_code'] || '00000';
   }
-}
+
+  public async getUserEntitlements(): Promise<void> {
+    try {
+      await this.getLocation();
+
+      if (!this.appConfig) {
+        await this.getAppConfig();
+      }
+
+      try {
+        const response = await axios.put(
+          'https://ent.fox.com/user-preferences/v1/home-location',
+          { home_zip_code: this.platform_zip },
+          {
+            headers: {
+              'user-agent': androidFoxOneUserAgent,
+              'authorization': `bearer ${this.adobe_auth.accessToken}`,
+              'x-api-key': this.appConfig.network.apikey,
+              'content-type': 'application/json'
+            }
+          }
+        );
+      } catch (error) {
+        console.error('Error updating zip code:', error.response?.data || error.message);
+        throw error;
+      }
+      const { data: userEnt } = await axios.get<any>(
+        'https://ent.fox.com/user-preferences/v1/preferences',
+        {
+          headers: {
+            'User-Agent': androidFoxOneUserAgent,
+            'x-api-key': this.appConfig.network.apikey || '',
+            authorization: `Bearer ${this.adobe_prelim_auth_token.accessToken}`,
+            'x-platform-location': this.platform_location || '',
+          },
+        }
+      );
+
+      const results = userEnt?.data?.results || [];
+      for (const item of results) {
+        if (item.key === 'HOME_LOCATION' && item.value) {
+          this.homeMetroCode = item.value.home_metro_code || null;
+          this.homeZipCode = item.value.home_zip_code || null;
+          break;
+        }
+      }
+
+      const { data: userData } = await axios.post<any>(
+        'https://api.fox.com/dtc/product/config/v1/keygen/secondary_info',
+        this.contentEnt,
+        {
+          headers: {
+            'User-Agent': androidFoxOneUserAgent,
+            'x-fox-apikey': this.appConfig.network.apikey,
+            authorization: `Bearer ${this.adobe_prelim_auth_token.accessToken}`,
+            'x-platform-location': this.platform_location || '',
+            'x-fox-zipcode': this.platform_zip || '',
+            'x-home-zipcode': this.homeZipCode || '',
+            'x-fox-home-dma': this.homeMetroCode || '',
+            'x-fox-dma': this.homeMetroCode || '',
+          },
+        }
+      );
+
+      const headers = userData?.data?.headers || [];
+      const entitlementHeader = headers.find((h: any) => h.key === 'x-fox-content-entitlement');
+
+      if (entitlementHeader && entitlementHeader.value) {
+        this.contentEntitlement = entitlementHeader.value;
+      } else {
+        console.warn('x-fox-content-entitlement not found in response');
+      }
+
+    } catch (e) {
+      console.error('Error in getUserEntitlements:', e);
+    }
+  }
 
   public refreshTokens = async () => {
-    const {enabled} = await db.providers.findOneAsync<IProvider>({name: 'foxone'});
+    const {enabled} = await db.providers.findOneAsync<IProvider<TFoxOneTokens, IFoxOneMeta>>({name: 'foxone'});
 
     if (!enabled) {
       return;
@@ -467,7 +752,7 @@ public async getUserEntitlements(): Promise<void> {
   };
 
   public getSchedule = async (): Promise<void> => {
-    const {enabled} = await db.providers.findOneAsync<IProvider>({name: 'foxone'});
+    const {enabled} = await db.providers.findOneAsync<IProvider<TFoxOneTokens, IFoxOneMeta>>({name: 'foxone'});
 
     if (!enabled) {
       return;
@@ -490,11 +775,10 @@ public async getUserEntitlements(): Promise<void> {
         await this.getAppConfig();
       }
 
-//   current CDNs for FOX One: akamai, cloudfront(digitalvideoplatform.com), and maybe fastly
-      let cdn = 'akamai';
+      let cdn = 'cloudfront';
       let data;
 
-      if (cdn === 'akamai' || cdn === 'cloudfront' || cdn === 'fastly') {
+      while (cdn === 'akamai' || cdn === 'cloudfront' || cdn === 'fastly') {
         data = await this.getStreamData(eventId);
         cdn = data.stream.CDN;
       }
@@ -504,8 +788,6 @@ public async getUserEntitlements(): Promise<void> {
       }
 
       const playURL = data.stream.playbackUrl;
-
-//     console.log('Stream Data Url:', playURL)
 
       if (!playURL) {
         throw new Error('Could not get stream data. Event might be upcoming, ended, or in blackout...');
@@ -542,21 +824,28 @@ public async getUserEntitlements(): Promise<void> {
     let watchData;
 
     for (let a = resIndex; a < streamOrder.length; a++) {
+      let deviceCapabilities: string;
+      if (streamOrder[a] === 'UHD/HDR') {
+        deviceCapabilities = 'color/HDR,maxRes/UHD';
+      } else {
+        deviceCapabilities = 'color/SDR,maxRes/HD';
+      }
+
       try {
         const {data} = await axios.post(
           'https://prod.api.digitalvideoplatform.com/foxdtc/v3.0/watchlive',
-{
+          {
             asset: {
               id: eventId,
             },
-            device:{
+            device: {
               height: 2160,
-              width: 3840,
-              maxRes: streamOrder[a],
+              model: 'onn. 4K Streaming Box',
               os: 'android',
               osv: '12',
+              width: 3840,
             },
-            stream:{
+            stream: {
               type: 'Live',
             }
           },
@@ -566,7 +855,7 @@ public async getUserEntitlements(): Promise<void> {
               authorization: this.adobe_auth.accessToken,
               'x-api-key': this.appConfig.network.apikey,
               'x-platform-location': this.platform_location,
-              'x-fox-zipcode': this.platform_zip,
+              'x-device-capabilities': deviceCapabilities,
             },
           },
         );
@@ -581,233 +870,8 @@ public async getUserEntitlements(): Promise<void> {
         );
       }
     }
-  //  console.log('FOX One selected stream data:', watchData);
-
     return watchData;
   };
-
-  private getEvents = async (): Promise<IFoxOneEvent[]> => {
-    if (!this.appConfig) {
-      await this.getAppConfig();
-    }
-
-    const useLinear = await usesLinear();
-    const events: IFoxOneEvent[] = [];
-
-    const [now, inTwoDays] = normalTimeRange();
-
-    const startTime = now.unix();
-    const endTime = inTwoDays.unix();
-
-try {
-  // const events: IFoxOneEvent[] = []; removed because it is causing issues getting events
-
-  await this.getLocation();
-  await this.getEntitlements();  //// Added for testing ////
-  await this.getUserEntitlements();
-
-
-  // 1. Init request
-  const { data: initData } = await axios.get<any>(
-    'https://api.fox.com/dtc/product/config/v1/init',
-    {
-      headers: {
-        'User-Agent': androidFoxOneUserAgent,
-        authorization: `Bearer ${this.adobe_prelim_auth_token.accessToken}`,
-        'x-fox-apikey': this.appConfig.network.apikey,
-        'x-platform-location': this.platform_location,
-        'x-fox-zipcode': this.platform_zip,
-        'x-home-zipcode': this.homeZipCode || '',
-        'x-fox-home-dma': this.homeMetroCode || '',
-        'x-fox-dma': this.homeMetroCode || '',
-        'x-fox-content-entitlement': this.contentEntitlement || '',
-        'x-fox-userauth': `Bearer ${this.adobe_prelim_auth_token.accessToken}`,
-      },
-    },
-  );
-
-  // 2. Fetch navigation page (prepend base)
-  const navigationUri = initData?.data?.dynamic_uris?.navigation_uri;
-
-  if (!navigationUri) {
-    throw new Error('navigation_uri not found in init data');
-  }
-
-  const { data: navData } = await axios.get<any>(
-  `https://api.fox.com/dtc${navigationUri}?page=1&size=25`,
-  {
-    headers: {
-      'User-Agent': androidFoxOneUserAgent,
-      authorization: `Bearer ${this.adobe_prelim_auth_token.accessToken}`,
-      'x-fox-apikey': this.appConfig.network.apikey,
-      'x-platform-location': this.platform_location,
-      'x-fox-zipcode': this.platform_zip,
-      'x-home-zipcode': this.homeZipCode || '',
-      'x-fox-home-dma': this.homeMetroCode || '',
-      'x-fox-dma': this.homeMetroCode || '',
-      'x-fox-content-entitlement': this.contentEntitlement || '',
-      'x-fox-userauth': `Bearer ${this.adobe_prelim_auth_token.accessToken}`,
-    },
-  },
-);
-
-let lSchedUri: string | undefined = undefined;
-
-if (navData.data?.items) {
-    for (const item of navData.data.items) {
-        if (item.subitems) {
-            for (const subitem of item.subitems) {
-                if (subitem.subitems) {
-                    // Look for the guide within the SECOND level of 'subitems'
-                    const foundDeepSubitem = subitem.subitems.find(
-                        (deepSub: any) => deepSub.item_key === "guide"
-                    );
-
-                    if (foundDeepSubitem) {
-                        lSchedUri = foundDeepSubitem.page_uri;
-                        break;
-                    }
-                }
-            }
-        }
-        if (lSchedUri) {
-            break;
-        }
-    }
-}
-  const liveScheduleUri = lSchedUri;
-
-  // 3. Fetch live schedule page (prepend base)
-
-  if (!liveScheduleUri) {
-    throw new Error('live_schedule_page_uri not found in init data');
-  }
-
-  const { data: scheduleData } = await axios.get<any>(
-    `https://api.fox.com/dtc${liveScheduleUri}`,
-    {
-      headers: {
-        'User-Agent': androidFoxOneUserAgent,
-        authorization: `Bearer ${this.adobe_prelim_auth_token.accessToken}`,
-        'x-fox-apikey': this.appConfig.network.apikey,
-        'x-platform-location': this.platform_location,
-        'x-fox-zipcode': this.platform_zip,
-        'x-home-zipcode': this.homeZipCode || '',
-        'x-fox-home-dma': this.homeMetroCode || '',
-        'x-fox-dma': this.homeMetroCode || '',
-        'x-fox-content-entitlement': this.contentEntitlement || '',
-        'x-fox-userauth': `Bearer ${this.adobe_prelim_auth_token.accessToken}`,
-      },
-    },
-  );
-
-  // 4. Extract all container URIs
-  const containerUris: string[] =
-    scheduleData?.data.containers?.map((c: any) => c.uri) || [];
-
-  // 5. Fetch each container and combine into one list
-  const allContainerData: any[] = [];
-
-for (const uri of containerUris) {
-  try {
-    const { data } = await axios.get<any>(
-      `https://api.fox.com/dtc${uri}`,
-      {
-        headers: {
-          'User-Agent': androidFoxOneUserAgent,
-          authorization: `Bearer ${this.adobe_prelim_auth_token.accessToken}`,
-          'x-fox-apikey': this.appConfig.network.apikey,
-          'x-platform-location': this.platform_location,
-          'x-fox-zipcode': this.platform_zip,
-          'x-home-zipcode': this.homeZipCode || '',
-          'x-fox-home-dma': this.homeMetroCode || '',
-          'x-fox-dma': this.homeMetroCode || '',
-          'x-fox-content-entitlement': this.contentEntitlement || '',
-          'x-fox-userauth': `Bearer ${this.adobe_prelim_auth_token.accessToken}`,
-        },
-      },
-    );
-
-    // Push the actual items array from data.data
-    if (data?.data?.items && Array.isArray(data.data.items)) {
-      allContainerData.push(...data.data.items); // Spread to flatten into main array
-    } else {
-      console.warn(`No items found in container ${uri}`);
-    }
-
-  } catch (err) {
-    console.warn(`Failed to fetch container ${uri}:`, err);
-  }
-}
-
-// Extract all event_ids
-const allEntityIds: string[] = allContainerData
-  .filter(item => item && typeof item === 'object' && item.entity_id)
-  .map(item => item.entity_id);
-
-//console.log('All event IDs:', allEntityIds);
-//console.log('Total event IDs:', allEntityIds.length);
-// Extract all event_ids
-
-// Check for duplicates
-const seen = new Set();
-const duplicates = new Set();
-
-allEntityIds.forEach(id => {
-  if (seen.has(id)) {
-    duplicates.add(id);
-  } else {
-    seen.add(id);
-  }
-});
-
-//console.log('Duplicate event IDs:', Array.from(duplicates));
-//console.log('Total duplicates found:', duplicates.size);
-
-// Optionally create a flattened list of all events
-const allEvents = allContainerData.map(event => {
-  if (!event.genre_metadata) {
-    event.genre_metadata = []; // Default to empty array
-  }
-  return event;
-});
-
-  // 6. Use the flattened list for the filtering logic
-
-  _.forEach(allEvents, m => {
-
-  //// Use for Debugging Event Entry
-  // If content_sku is missing, skip this event
-  if (!m.content_sku) {
-    //console.log(`Skipping event - no content_sku: ${m.call_sign}: ${m.description}`);
-    return;
-  }
-
-  // Check if this event's content_sku matches any of our entitlements
-  const hasEntitlement = this.entitlements.some(entitlement => {
-    return m.content_sku.includes(entitlement) || 
-           entitlement.includes(m.content_sku);
-  });
-
-  if (
-    m.call_sign &&
-    hasEntitlement &&
-    m.is_multiview !== true &&
-    !m.audio_only &&
-    m.start_time &&
-    m.end_time &&
-    m.entity_id && 
-    !m.entity_id.includes("-long-")
-  ) {
-    events.push(m);
-    }
-     });
-    
-} catch (e) {
-  console.error('Error while loading FoxOne events:', e);
-}
-  return events;
-};
 
   private getAppConfig = async () => {
     try {
@@ -825,7 +889,7 @@ const allEvents = allContainerData.map(event => {
         await this.getAppConfig();
       }
 
-      await this.getLocation();  // Ensure location and zip code are set
+      await this.getLocation();
 
       const {data} = await axios.get<any>(
         `https://ent.fox.com${this.appConfig.network.identity.entitlementsUrl}?device_type=&device_id=${this.adobe_device_id}&resource=&requestor=`,
@@ -844,10 +908,9 @@ const allEvents = allContainerData.map(event => {
       this.entArray = [];
       this.contentEnt = [];
 
-      // Check if data.data exists and contains results
       const results = data?.data?.results;
       if (Array.isArray(results)) {
-        this.entArray = results; // This will contain all the entitlement objects
+        this.entArray = results;
         this.entitlements = results
           .map((item: any) => item.contentSku)
           .filter((sku: any) => typeof sku === 'string');
@@ -859,11 +922,11 @@ const allEvents = allContainerData.map(event => {
           proxied_entitlement: item.proxiedEntitlement,
           entitlement_types: item.entitlementType || []
         }));
-        
+
         const finalEntitlements = {
           favorites: {
             teams: [],
-            series:[],
+            series: [],
             leagues: [],
             movies: [],
             specials: [],
@@ -871,14 +934,9 @@ const allEvents = allContainerData.map(event => {
           user_entitlement: transformedEntitlements,
           user_onboarding_preferences: []
         };
-        
-        // Save to this.contentEnt
-        this.contentEnt = finalEntitlements;
-        
-        //console.log('Transformed entitlements:', this.contentEnt);
-      }
 
-      //console.log('ENT ARRAY: ', this.entArray)
+        this.contentEnt = finalEntitlements;
+      }
     } catch (e) {
       console.error(e);
     }
@@ -892,7 +950,6 @@ const allEvents = allContainerData.map(event => {
 
       const {data} = await axios.post<IAdobePrelimAuthToken>(
         `https://id.fox.com${this.appConfig.network.identity.loginUrl}`,
-
         {
           deviceId: this.adobe_device_id,
         },
@@ -955,7 +1012,6 @@ const allEvents = allContainerData.map(event => {
       }
 
       const {data} = await axios.get(`https://id.fox.com/v2.0/checkadobeauthn/v2/?device_id=${this.adobe_device_id}`, {
-
         headers: {
           'User-Agent': androidFoxOneUserAgent,
           authorization: !this.adobe_auth?.accessToken
@@ -990,7 +1046,7 @@ const allEvents = allContainerData.map(event => {
   };
 
   private save = async () => {
-    await db.providers.updateAsync({name: 'foxone'}, {$set: {tokens: _.omit(this, 'appConfig', 'entitlements', 'entArray', 'foxStationId', 'mnStationId', 'platform_location', 'platform_zip', 'contentEnt')}});
+    await db.providers.updateAsync({name: 'foxone'}, {$set: {tokens: _.omit(this, 'appConfig', 'entitlements', 'entArray', 'foxStationId', 'mnStationId', 'platform_location', 'platform_zip', 'contentEnt', 'homeMetroCode', 'homeZipCode','contentEntitlement', 'stationMap')}});
   };
 
   private load = async (): Promise<void> => {
@@ -1014,5 +1070,4 @@ const allEvents = allContainerData.map(event => {
 }
 
 export type TFoxOneTokens = ClassTypeWithoutMethods<FoxOneHandler>;
-
 export const foxOneHandler = new FoxOneHandler();
