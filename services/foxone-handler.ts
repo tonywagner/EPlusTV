@@ -774,12 +774,12 @@ public getStationMap = async (): Promise<typeof this.stationMap> => {
         await this.getAppConfig();
       }
 
-      let cdn = 'cloudfront';
+      let cdn = '';  ///// leaving cdn blank here and in the while loop will select the first stream offered up.  Changing to akamai, fastly or cloudfront here and as !== in the while loop will default to that cdn
       let data;
 
-      while (cdn === 'akamai' || cdn === 'cloudfront' || cdn === 'fastly') {
+      while (cdn === '') { ///// If only want one use (cdn !== 'selected cdn of choice') can be akamai, cloudfront or fastly
         data = await this.getStreamData(eventId);
-        cdn = data.stream.CDN;
+        cdn = data.stream.cdn;
       }
 
       if (!data || !data?.stream?.playbackUrl) {
@@ -787,6 +787,11 @@ public getStationMap = async (): Promise<typeof this.stationMap> => {
       }
 
       const playURL = data.stream.playbackUrl;
+      
+      ///////////////// Debugging CDNs////////////////////
+      // console.log('Playback Info:', {
+      //   PlaybackURL: data.stream.playbackUrl,
+      //   CDN: data.stream.cdn})
 
       if (!playURL) {
         throw new Error('Could not get stream data. Event might be upcoming, ended, or in blackout...');
