@@ -91,7 +91,7 @@ const all_conferences = [
   },
   {
     short_name: 'GNAC',
-    full_name: 'Great Northeast Athletic Conference',
+    full_name: 'Great Northwest Athletic Conference',
     slug: 'gnac',
   },
   {
