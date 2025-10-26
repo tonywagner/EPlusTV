@@ -18,7 +18,7 @@ const createBaseUrlChunklist = (url: string, network: string): string => {
   let filteredUrl: string[] | string = cleaned.split('/');
 
   if ((network === 'foxsports' || network === 'foxone') && !url.includes('akamai')) {
-  filteredUrl = filteredUrl.filter(seg => !seg.match(/=/));
+    filteredUrl = filteredUrl.filter(seg => !seg.match(/=/));
   }
 
   filteredUrl = filteredUrl.join('/');
@@ -27,15 +27,14 @@ const createBaseUrlChunklist = (url: string, network: string): string => {
 const usesHostRoot = (url: string): boolean => url.startsWith('/');
 const convertHostUrl = (url: string, fullUrl: string): string => {
   const uri = new URL(fullUrl);
-
   return `${uri.origin}${url}`;
 };
 const isBase64Uri = (url: string) => url.indexOf('base64') > -1 || url.startsWith('data');
 
 const reTarget = /#EXT-X-TARGETDURATION:([0-9]+)/;
-const reAudioTrack = /#EXT-X-MEDIA:TYPE=AUDIO.*URI="([^"]+)"/gm;
+const reAudioTrack = /#EXT-X-MEDIA:TYPE=AUDIO.*?,URI="([^"]+?)"/gm;
 const reMap = /#EXT-X-MAP:URI="([^"]+)"/gm;
-const reSubMap = /#EXT-X-MEDIA:TYPE=SUBTITLES.*URI="([^"]+)"/gm;
+const reSubMap = /#EXT-X-MEDIA:TYPE=SUBTITLES.*?,URI="([^"]+?)"/gm;
 const reSubMapVictory = /#EXT-X-MEDIA:.*TYPE=SUBTITLES.*URI="([^"]+)"/gm;
 const reVersion = /#EXT-X-VERSION:(\d+)/;
 
@@ -48,227 +47,40 @@ const updateVersion = (playlist: string): string =>
 
 const getTargetDuration = (chunklist: string, divide = true): number => {
   let targetDuration = 2;
-
   const tester = reTarget.exec(chunklist);
 
   if (tester && tester[1]) {
     targetDuration = divide ? Math.floor(parseInt(tester[1], 10) / 2) : parseInt(tester[1], 10);
-
     if (!_.isNumber(targetDuration) || _.isNaN(targetDuration)) {
       targetDuration = 2;
     }
   }
-
   return targetDuration;
 };
 
-const handleDateranges = (playlist: string, network: string): string => {
-  // Regular expression to match #EXT-X-DATERANGE tags
-  const daterangeRegex = /#EXT-X-DATERANGE:(.*?)(\r?\n|$)/g;
-  const dateranges: {
-    start: number;
-    end: number;
-    class: string;
-    params: Record<string, string>;
-    index: number;
-    length: number;
-    ending: string;
-    original: string;
-  }[] = [];
-  let match: RegExpExecArray | null;
-
-  // Parse all DATERANGE tags
-  while ((match = daterangeRegex.exec(playlist)) !== null) {
-    const tagContent = match[1];
-    const original = match[0];
-    const ending = match[2];
-
-    // Parse tag attributes
-    const params = tagContent.split(',').reduce((acc, param) => {
-      const [key, value] = param.split('=');
-      if (key && value) {
-        acc[key.trim()] = value.trim().replace(/^"|"$/g, '');
-      }
-      return acc;
-    }, {} as Record<string, string>);
-
-    // Add CLASS if missing, only for foxone network
-    if (network === 'foxone' && !params['CLASS'] && params['ID']) {
-      params['CLASS'] = params['ID'];
-    }
-
-    // Validate required attributes
-    const startStr = params['START-DATE'] || params['START'];
-    const endStr = params['END-DATE'] || params['END'];
-    const durationStr = params['DURATION'];
-    const classValue = params['CLASS'] || 'no-class'; // Fallback if still no CLASS
-
-    // Parse START, END, and DURATION
-    let start: number, end: number;
-    try {
-      if (startStr) {
-        // Handle ISO 8601 timestamps or numeric
-        start = startStr.includes('T')
-          ? new Date(startStr).getTime() / 1000
-          : parseFloat(startStr);
-
-        if (isNaN(start)) {
-          console.warn(`Skipping invalid DATERANGE with invalid START: ${tagContent}`);
-          continue;
-        }
-
-        // Determine END
-        if (endStr) {
-          end = endStr.includes('T')
-            ? new Date(endStr).getTime() / 1000
-            : parseFloat(endStr);
-        } else if (durationStr) {
-          const duration = parseFloat(durationStr);
-          end = isNaN(duration) ? NaN : start + duration;
-        } else {
-          // Treat as point event if no END or DURATION
-          end = start;
-        }
-
-        if (isNaN(end) || start > end) {
-          console.warn(`Skipping invalid DATERANGE: start=${startStr}, end=${endStr}, duration=${durationStr}, class=${classValue}`);
-          continue;
-        }
-
-        dateranges.push({
-          start,
-          end,
-          class: classValue,
-          params,
-          index: match.index,
-          length: original.length,
-          ending,
-          original,
-        });
-      } else {
-        console.warn(`Skipping DATERANGE with missing START attribute: ${tagContent}`);
-      }
-    } catch (e) {
-      console.error(`Error parsing DATERANGE: ${tagContent}`, e);
-    }
+const handleDateranges = (manifest: string, network: string): string => {
+  if (network !== 'foxone') {
+    return manifest;
   }
-
-  // Log parsed DATERANGE tags for debugging
-  // console.log(`Found ${dateranges.length} DATERANGE tags`);
-
-  // Group by CLASS
-  const groups: Record<string, typeof dateranges[0][]> = {};
-  dateranges.forEach(d => {
-    if (!groups[d.class]) {
-      groups[d.class] = [];
-    }
-    groups[d.class].push(d);
-  });
-
-  // Process each group to merge overlaps
-  const replacements: { pos: number; len: number; newStr: string }[] = [];
-
-  Object.values(groups).forEach(group => {
-    if (group.length === 0) return;
-
-    // Sort by start time
-    group.sort((a, b) => a.start - b.start);
-
-    // Log group details
-    // console.log(`Processing group with CLASS="${group[0].class}", count=${group.length}`);
-    // group.forEach(d =>
-    //   console.log(
-    //     `  DATERANGE: start=${d.start}, end=${d.end}, params=${JSON.stringify(d.params)}`
-    //   )
-    // );
-
-    // Merge overlapping ranges
-    const merged: typeof group[0][] = [];
-    let current = { ...group[0] };
-
-    for (let i = 1; i < group.length; i++) {
-      const next = group[i];
-      // Consider ranges overlapping if current.end >= next.start (with epsilon for floating-point)
-      const epsilon = 0.001;
-      if (current.end + epsilon >= next.start) {
-        // Overlap: extend to max end time
-        current.end = Math.max(current.end, next.end);
-        // Merge attributes, prioritizing the first tag's non-time attributes
-        current.params = { ...next.params, ...current.params }; // Prioritize first tag's attributes
-        // console.warn(
-        //   `Merged overlap in DATERANGE with CLASS="${current.class}": ${current.start}-${current.end}`
-        // );
-      } else {
-        merged.push(current);
-        current = { ...next };
-      }
-    }
-    merged.push(current);
-
-    // Generate replacement tags
-    merged.forEach(m => {
-      // Update time-related attributes based on original keys
-      if (m.params['START-DATE']) {
-        m.params['START-DATE'] = new Date(m.start * 1000).toISOString();
-      } else if (m.params['START']) {
-        m.params['START'] = m.start.toString();
-      }
-
-      if (m.params['END-DATE']) {
-        m.params['END-DATE'] = new Date(m.end * 1000).toISOString();
-      } else if (m.params['END']) {
-        m.params['END'] = m.end.toString();
-      } else if (m.params['DURATION']) {
-        m.params['DURATION'] = (m.end - m.start).toString();
-      }
-      // If it was a point event (no END/DURATION originally), don't add them
-
-      const newTagContent = Object.entries(m.params)
-        .map(([k, v]) => {
-          if (k === 'SCTE35-CMD' || k === 'SCTE35-OUT' || k === 'SCTE35-IN') {
-            return `${k}=${v}`;
-          } else {
-            return `${k}="${v}"`;
-          }
-        })
-        .join(',');
-      const newStr = `#EXT-X-DATERANGE:${newTagContent}${m.ending}`;
-      replacements.push({ pos: m.index, len: m.length, newStr });
-    });
-
-    // Remove original tags that were merged away
-    const keptPositions = new Set(merged.map(m => m.index));
-    group.forEach(d => {
-      if (!keptPositions.has(d.index)) {
-        replacements.push({ pos: d.index, len: d.length, newStr: '' });
-      }
-    });
-  });
-
-  // Apply replacements in reverse order to avoid index shifts
-  replacements.sort((a, b) => b.pos - a.pos);
-  let updatedPlaylist = playlist;
-  replacements.forEach(r => {
-    updatedPlaylist = updatedPlaylist.slice(0, r.pos) + r.newStr + updatedPlaylist.slice(r.pos + r.len);
-  });
-
-  // Log final playlist for debugging
-  // console.log('Updated playlist DATERANGE tags:');
-  const finalMatches = updatedPlaylist.match(daterangeRegex) || [];
-  // finalMatches.forEach(m => console.log(m));
-
-  return updatedPlaylist;
+  return manifest.replace(/#EXT-X-DATERANGE.*\n/gm, '');
 };
 
-const parseReplacementUrl = (url: string, manifestUrl: string): string =>
-  isRelativeUrl(url)
-    ? usesHostRoot(url)
-      ? convertHostUrl(url, manifestUrl)
-      : cleanUrl(`${createBaseUrl(manifestUrl)}/${url}`)
-    : url;
+const parseReplacementUrl = (uri: string, manifestUrl: string): string => {
+  if (isRelativeUrl(uri)) {
+    if (usesHostRoot(uri)) {
+      return convertHostUrl(uri, manifestUrl);
+    }
+    const base = createBaseUrl(manifestUrl);
+    const cleanedUri = cleanUrl(`${base}${uri.split('?')[0]}`);
+    const query = uri.includes('?') ? `?${uri.split('?')[1]}` : '';
+    return `${cleanedUri}${query}`;
+  }
+  return uri.replace(/\/(\d+_\w+\/\*\~\/)/, '/');
+};
 
 export class PlaylistHandler {
   public playlist: string;
+  private chunklistUrlMap: Map<string, string> = new Map();
 
   private baseUrl: string;
   private baseProxyUrl: string;
@@ -317,7 +129,6 @@ export class PlaylistHandler {
         },
       });
 
-      // Preprocess manifest only for foxone to handle DATERANGE tags before parsing
       const processedManifest = this.network === 'foxone' ? handleDateranges(manifest, this.network) : manifest;
 
       if (resHeaders['set-cookie']) {
@@ -328,75 +139,143 @@ export class PlaylistHandler {
 
       let urlParams = '';
       if (this.network === 'foxsports' || this.network === 'foxone') {
-      try {
-        urlParams = new URL(realManifestUrl).search;
-          } catch (error) {
+        try {
+          const parsedUrl = new URL(realManifestUrl);
+          urlParams = parsedUrl.search;
+        } catch (error) {
           console.error('Invalid URL provided:', error);
-        urlParams = ''; // Fallback to an empty string on error
+          urlParams = '';
+        }
       }
-}
-      const playlist = HLS.parse(manifest);
 
-      /** Sort playlist so highest resolution is first in list (Emby workaround) */
+      const playlist = HLS.parse(processedManifest);
+
       playlist.variants?.sort((v1, v2) => {
         if (v1.bandwidth > v2.bandwidth) {
           return -1;
         }
-
         if (v1.bandwidth < v2.bandwidth) {
           return 1;
         }
-
         return 0;
       });
 
+      const isUHDStream = playlist.variants?.some(variant => variant.resolution?.width >= 3840);
+
       const clonedManifest = updateVersion(HLS.stringify(playlist));
       let updatedManifest = clonedManifest;
+
+      const cleanForChunklist = (url: string): string => {
+        try {
+          const parsedUrl = new URL(url);
+          return parsedUrl.pathname.split('/').pop()?.replace(/\.m3u8$/, '') || 'chunklist';
+        } catch {
+          return url.split('/').pop()?.replace(/\.m3u8$/, '') || 'chunklist';
+        }
+      };
+
+      const mergeQueryParams = (baseUrl: string, params: string): string => {
+        try {
+          const base = new URL(baseUrl);
+          const existingParams = new URLSearchParams(base.search);
+          const newParams = new URLSearchParams(params);
+          newParams.forEach((value, key) => {
+            existingParams.set(key, value);
+          });
+          base.search = existingParams.toString();
+          return base.toString();
+        } catch {
+          return `${baseUrl}${params}`;
+        }
+      };
 
       if (this.network === 'victory' || this.network === 'bally') {
         const subTracks = [...manifest.matchAll(reSubMapVictory)];
         subTracks.forEach(track => {
           if (track && track[1]) {
             const fullChunklistUrl = parseReplacementUrl(track[1], realManifestUrl);
-
-            const chunklistName = cacheLayer.getChunklistFromUrl(`${fullChunklistUrl}${urlParams}`);
-            updatedManifest = updatedManifest.replace(track[1], `${this.baseProxyUrl}${chunklistName}.m3u8`);
-          }
-        });
-      } else if (! (this.network == 'foxsports' || this.network === 'foxone')) {
-        const audioTracks = [...manifest.matchAll(reAudioTrack)];
-        audioTracks.forEach(track => {
-          if (track && track[1]) {
-            const fullChunklistUrl = parseReplacementUrl(track[1], realManifestUrl);
-
-            const chunklistName = cacheLayer.getChunklistFromUrl(`${fullChunklistUrl}${urlParams}`);
-            updatedManifest = updatedManifest.replace(track[1], `${this.baseProxyUrl}${chunklistName}.m3u8`);
-          }
-        });
-
-        const subTracks = [...manifest.matchAll(reSubMap)];
-        subTracks.forEach(track => {
-          if (track && track[1]) {
-            const fullChunklistUrl = parseReplacementUrl(track[1], realManifestUrl);
-
-            const chunklistName = cacheLayer.getChunklistFromUrl(`${fullChunklistUrl}${urlParams}`);
+            const chunklistName = cacheLayer.getChunklistFromUrl(fullChunklistUrl);
             updatedManifest = updatedManifest.replace(track[1], `${this.baseProxyUrl}${chunklistName}.m3u8`);
           }
         });
       }
 
+      if (this.network !== 'foxsports') {
+        const audioTracks = [...processedManifest.matchAll(reAudioTrack)];
+        audioTracks.forEach(track => {
+          if (track && track[1]) {
+            const fullChunklistUrl = parseReplacementUrl(track[1], realManifestUrl);
+            const chunklistUrlForName = this.network === 'foxone' && isUHDStream ? cleanForChunklist(fullChunklistUrl) : fullChunklistUrl;
+            const chunklistName = cacheLayer.getChunklistFromUrl(chunklistUrlForName);
+            if (this.network === 'foxone' && isUHDStream) {
+              const fullUrl = urlParams ? mergeQueryParams(fullChunklistUrl, urlParams) : fullChunklistUrl;
+              this.chunklistUrlMap.set(chunklistName, fullUrl);
+            }
+            updatedManifest = updatedManifest.replace(track[1], `${this.baseProxyUrl}${chunklistName}.m3u8`);
+          }
+        });
+
+        const subTracks = [...processedManifest.matchAll(reSubMap)];
+        subTracks.forEach(track => {
+          if (track && track[1]) {
+            const fullChunklistUrl = parseReplacementUrl(track[1], realManifestUrl);
+            const chunklistUrlForName = this.network === 'foxone' && isUHDStream ? cleanForChunklist(fullChunklistUrl) : fullChunklistUrl;
+            const chunklistName = cacheLayer.getChunklistFromUrl(chunklistUrlForName);
+            if (this.network === 'foxone' && isUHDStream) {
+              const fullUrl = urlParams ? mergeQueryParams(fullChunklistUrl, urlParams) : fullChunklistUrl;
+              this.chunklistUrlMap.set(chunklistName, fullUrl);
+            }
+            updatedManifest = updatedManifest.replace(track[1], `${this.baseProxyUrl}${chunklistName}.m3u8`);
+          }
+        });
+
+        if (this.network === 'foxone' && isUHDStream && audioTracks.length === 0 && subTracks.length === 0) {
+          if (playlist.media && playlist.media.length > 0) {
+            playlist.media.forEach(media => {
+              if (media.type === 'AUDIO' || media.type === 'SUBTITLES') {
+                const fullChunklistUrl = parseReplacementUrl(media.uri, realManifestUrl);
+                const chunklistUrlForName = cleanForChunklist(fullChunklistUrl);
+                const chunklistName = cacheLayer.getChunklistFromUrl(chunklistUrlForName);
+                const fullUrl = urlParams ? mergeQueryParams(fullChunklistUrl, urlParams) : fullChunklistUrl;
+                this.chunklistUrlMap.set(chunklistName, fullUrl);
+                updatedManifest = updatedManifest.replace(media.uri, `${this.baseProxyUrl}${chunklistName}.m3u8`);
+              }
+            });
+          } else {
+            const lines = processedManifest.split('\n');
+            lines.forEach(line => {
+              if (line.includes('TYPE=AUDIO') || line.includes('TYPE=SUBTITLES')) {
+                const uriMatch = line.match(/URI="([^"]+?)"/);
+                if (uriMatch && uriMatch[1]) {
+                  const fullChunklistUrl = parseReplacementUrl(uriMatch[1], realManifestUrl);
+                  const chunklistUrlForName = cleanForChunklist(fullChunklistUrl);
+                  const chunklistName = cacheLayer.getChunklistFromUrl(chunklistUrlForName);
+                  const fullUrl = urlParams ? mergeQueryParams(fullChunklistUrl, urlParams) : fullChunklistUrl;
+                  this.chunklistUrlMap.set(chunklistName, fullUrl);
+                  updatedManifest = updatedManifest.replace(uriMatch[1], `${this.baseProxyUrl}${chunklistName}.m3u8`);
+                }
+              }
+            });
+          }
+        }
+      }
+
       playlist.variants?.forEach(variant => {
         const fullChunklistUrl = parseReplacementUrl(variant.uri, realManifestUrl);
-
-        const chunklistName = cacheLayer.getChunklistFromUrl(`${fullChunklistUrl}${urlParams}`);
+        const chunklistUrlForName = this.network === 'foxone' && isUHDStream ? cleanForChunklist(fullChunklistUrl) : fullChunklistUrl;
+        const chunklistName = cacheLayer.getChunklistFromUrl(chunklistUrlForName);
+        if (this.network === 'foxone' && isUHDStream) {
+          const fullUrl = urlParams ? mergeQueryParams(fullChunklistUrl, urlParams) : fullChunklistUrl;
+          this.chunklistUrlMap.set(chunklistName, fullUrl);
+        }
         updatedManifest = updatedManifest.replace(variant.uri, `${this.baseProxyUrl}${chunklistName}.m3u8`);
       });
 
       this.playlist = updatedManifest;
-      //this.playlist = handleDateranges(this.playlist, this.network);
     } catch (e) {
       console.error(e);
       console.log('Could not parse M3U8 properly!');
+      throw e;
     }
   }
 
@@ -404,7 +283,6 @@ export class PlaylistHandler {
     if (this.segmentDuration) {
       return promiseCache.getPromise(chunklistId, this.proxyChunklist(chunklistId), this.segmentDuration * 1000);
     }
-
     return this.proxyChunklist(chunklistId);
   }
 
@@ -412,7 +290,11 @@ export class PlaylistHandler {
     const proxyAllSegments = await proxySegments();
 
     try {
-      const url = cacheLayer.getChunklistFromId(chunkListId);
+      let url = this.chunklistUrlMap.get(chunkListId);
+      if (!url) {
+        url = cacheLayer.getChunklistFromId(chunkListId);
+      }
+
       const headers = await this.getHeaders();
 
       const {data: chunkList, request} = await axios.get<string>(url, {
@@ -423,14 +305,12 @@ export class PlaylistHandler {
         },
       });
 
-      // Preprocess chunklist only for foxone to handle DATERANGE tags before parsing
       const processedChunklist = this.network === 'foxone' ? handleDateranges(chunkList, this.network) : chunkList;
 
       const realChunklistUrl = request.res.responseUrl;
       const baseManifestUrl = cleanUrl(createBaseUrlChunklist(realChunklistUrl, this.network));
       const keys = new Set<string>();
 
-      //const clonedChunklist = updateVersion(chunkList);
       const clonedChunklist = updateVersion(processedChunklist);
       let updatedChunkList = clonedChunklist;
 
@@ -451,11 +331,7 @@ export class PlaylistHandler {
 
         if (
           shouldProxy &&
-          // Proxy keyed segments
-          (segmentKey ||
-            // Proxy non-keyed segments that aren't on ESPN
-            (!segmentKey && this.network !== 'espn')) &&
-          // Just until I figure out a workaround
+          (segmentKey || (!segmentKey && this.network !== 'espn')) &&
           !segmentUrl.endsWith('mp4')
         ) {
           const segmentName = cacheLayer.getSegmentFromUrl(fullSegmentUrl, `${this.channel}-segment`);
@@ -510,6 +386,7 @@ export class PlaylistHandler {
     } catch (e) {
       console.error(e);
       console.log('Could not parse chunklist properly!');
+      throw e;
     }
   }
 
