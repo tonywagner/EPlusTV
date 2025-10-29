@@ -2,7 +2,7 @@
   <img src="https://i.imgur.com/FIGZdR3.png">
 </p>
 
-Current version: **4.13.8**
+Current version: **4.14.0**
 
 # About
 This takes programming from various providers and transforms it into a "live TV" experience with virtual linear channels. It will discover what is on, and generate a schedule of channels that will give you M3U and XMLTV files that you can import into something like [Jellyfin](https://jellyfin.org) or [Channels](https://getchannels.com).
@@ -86,6 +86,30 @@ Formerly ESPN+. Still available to login with ESPN credentials, but does not pro
 #### FloSports
 
 Available to login with FloSports credentials
+
+#### FOXOne
+
+Available to login with TV Provider - Direct Subscription or ESPN Subscription Not Currently Supported
+
+##### Linear Channels
+
+Will create dedicated linear channels if using dedicated linear channels, otherwise will schedule events normally
+
+| Network Name |
+|---|
+| FOX |
+| MyNetwork TV |
+| FS1 |
+| FS2 |
+| B1G Network |
+| FOX Deportes |
+| FOX News Channel |
+| FOX Business Network |
+| TMZ |
+| Masked Singer |
+| FOX Soul |
+| FOX Weather |
+| FOX Live Now |
 
 #### FOX Sports
 

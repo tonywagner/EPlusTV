@@ -17,7 +17,7 @@ const createBaseUrlChunklist = (url: string, network: string): string => {
   const cleaned = url.replace(/\.m3u8.*$/, '');
   let filteredUrl: string[] | string = cleaned.split('/');
 
-  if (network === 'foxsports' && !url.includes('akamai')) {
+  if ((network === 'foxsports' || network === 'foxone') && !url.includes('akamai')) {
     filteredUrl = filteredUrl.filter(seg => !seg.match(/=/));
   }
 
@@ -33,9 +33,9 @@ const convertHostUrl = (url: string, fullUrl: string): string => {
 const isBase64Uri = (url: string) => url.indexOf('base64') > -1 || url.startsWith('data');
 
 const reTarget = /#EXT-X-TARGETDURATION:([0-9]+)/;
-const reAudioTrack = /#EXT-X-MEDIA:TYPE=AUDIO.*URI="([^"]+)"/gm;
+const reAudioTrack = /#EXT-X-MEDIA:TYPE=AUDIO.*?,URI="([^"]+?)"/gm;
 const reMap = /#EXT-X-MAP:URI="([^"]+)"/gm;
-const reSubMap = /#EXT-X-MEDIA:TYPE=SUBTITLES.*URI="([^"]+)"/gm;
+const reSubMap = /#EXT-X-MEDIA:TYPE=SUBTITLES.*?,URI="([^"]+?)"/gm;
 const reSubMapVictory = /#EXT-X-MEDIA:.*TYPE=SUBTITLES.*URI="([^"]+)"/gm;
 const reVersion = /#EXT-X-VERSION:(\d+)/;
 
@@ -62,15 +62,29 @@ const getTargetDuration = (chunklist: string, divide = true): number => {
   return targetDuration;
 };
 
-const parseReplacementUrl = (url: string, manifestUrl: string): string =>
-  isRelativeUrl(url)
-    ? usesHostRoot(url)
-      ? convertHostUrl(url, manifestUrl)
-      : cleanUrl(`${createBaseUrl(manifestUrl)}/${url}`)
-    : url;
+const handleDateranges = (manifest: string, network: string): string => {
+  if (network !== 'foxone') {
+    return manifest;
+  }
+  return manifest.replace(/#EXT-X-DATERANGE.*\n/gm, '');
+};
+
+const parseReplacementUrl = (uri: string, manifestUrl: string): string => {
+  if (isRelativeUrl(uri)) {
+    if (usesHostRoot(uri)) {
+      return convertHostUrl(uri, manifestUrl);
+    }
+    const base = createBaseUrl(manifestUrl);
+    const cleanedUri = cleanUrl(`${base}${uri.split('?')[0]}`);
+    const query = uri.includes('?') ? `?${uri.split('?')[1]}` : '';
+    return `${cleanedUri}${query}`;
+  }
+  return uri.replace(/\/(\d+_\w+\/\*\~\/)/, '/');
+};
 
 export class PlaylistHandler {
   public playlist: string;
+  private chunklistUrlMap: Map<string, string> = new Map();
 
   private baseUrl: string;
   private baseProxyUrl: string;
@@ -119,14 +133,26 @@ export class PlaylistHandler {
         },
       });
 
+      const processedManifest = this.network === 'foxone' ? handleDateranges(manifest, this.network) : manifest;
+
       if (resHeaders['set-cookie']) {
         this.overlayCookies = resHeaders['set-cookie'];
       }
 
       const realManifestUrl = request.res.responseUrl;
-      const urlParams = this.network === 'foxsports' ? new URL(realManifestUrl).search : '';
 
-      const playlist = HLS.parse(manifest);
+      let urlParams = '';
+      if (this.network === 'foxsports' || this.network === 'foxone') {
+        try {
+          const parsedUrl = new URL(realManifestUrl);
+          urlParams = parsedUrl.search;
+        } catch (error) {
+          console.error('Invalid URL provided:', error);
+          urlParams = '';
+        }
+      }
+
+      const playlist = HLS.parse(processedManifest);
 
       /** Sort playlist so highest resolution is first in list (Emby workaround) */
       playlist.variants?.sort((v1, v2) => {
@@ -141,45 +167,114 @@ export class PlaylistHandler {
         return 0;
       });
 
+      const isUHDStream = playlist.variants?.some(variant => variant.resolution?.width >= 3840);
+
       const clonedManifest = updateVersion(HLS.stringify(playlist));
       let updatedManifest = clonedManifest;
+
+      const cleanForChunklist = (url: string): string => {
+        try {
+          const parsedUrl = new URL(url);
+          return parsedUrl.pathname.split('/').pop()?.replace(/\.m3u8$/, '') || 'chunklist';
+        } catch {
+          return url.split('/').pop()?.replace(/\.m3u8$/, '') || 'chunklist';
+        }
+      };
+
+      const mergeQueryParams = (baseUrl: string, params: string): string => {
+        try {
+          const base = new URL(baseUrl);
+          const existingParams = new URLSearchParams(base.search);
+          const newParams = new URLSearchParams(params);
+          newParams.forEach((value, key) => {
+            existingParams.set(key, value);
+          });
+          base.search = existingParams.toString();
+          return base.toString();
+        } catch {
+          return `${baseUrl}${params}`;
+        }
+      };
 
       if (this.network === 'victory' || this.network === 'bally') {
         const subTracks = [...manifest.matchAll(reSubMapVictory)];
         subTracks.forEach(track => {
           if (track && track[1]) {
             const fullChunklistUrl = parseReplacementUrl(track[1], realManifestUrl);
-
-            const chunklistName = cacheLayer.getChunklistFromUrl(`${fullChunklistUrl}${urlParams}`);
-            updatedManifest = updatedManifest.replace(track[1], `${this.baseProxyUrl}${chunklistName}.m3u8`);
-          }
-        });
-      } else if (this.network !== 'foxsports') {
-        const audioTracks = [...manifest.matchAll(reAudioTrack)];
-        audioTracks.forEach(track => {
-          if (track && track[1]) {
-            const fullChunklistUrl = parseReplacementUrl(track[1], realManifestUrl);
-
-            const chunklistName = cacheLayer.getChunklistFromUrl(`${fullChunklistUrl}${urlParams}`);
-            updatedManifest = updatedManifest.replace(track[1], `${this.baseProxyUrl}${chunklistName}.m3u8`);
-          }
-        });
-
-        const subTracks = [...manifest.matchAll(reSubMap)];
-        subTracks.forEach(track => {
-          if (track && track[1]) {
-            const fullChunklistUrl = parseReplacementUrl(track[1], realManifestUrl);
-
-            const chunklistName = cacheLayer.getChunklistFromUrl(`${fullChunklistUrl}${urlParams}`);
+            const chunklistName = cacheLayer.getChunklistFromUrl(fullChunklistUrl);
             updatedManifest = updatedManifest.replace(track[1], `${this.baseProxyUrl}${chunklistName}.m3u8`);
           }
         });
       }
 
+      if (this.network !== 'foxsports') {
+        const audioTracks = [...processedManifest.matchAll(reAudioTrack)];
+        audioTracks.forEach(track => {
+          if (track && track[1]) {
+            const fullChunklistUrl = parseReplacementUrl(track[1], realManifestUrl);
+            const chunklistUrlForName = this.network === 'foxone' && isUHDStream ? cleanForChunklist(fullChunklistUrl) : fullChunklistUrl;
+            const chunklistName = cacheLayer.getChunklistFromUrl(chunklistUrlForName);
+            if (this.network === 'foxone' && isUHDStream) {
+              const fullUrl = urlParams ? mergeQueryParams(fullChunklistUrl, urlParams) : fullChunklistUrl;
+              this.chunklistUrlMap.set(chunklistName, fullUrl);
+            }
+            updatedManifest = updatedManifest.replace(track[1], `${this.baseProxyUrl}${chunklistName}.m3u8`);
+          }
+        });
+
+        const subTracks = [...processedManifest.matchAll(reSubMap)];
+        subTracks.forEach(track => {
+          if (track && track[1]) {
+            const fullChunklistUrl = parseReplacementUrl(track[1], realManifestUrl);
+            const chunklistUrlForName = this.network === 'foxone' && isUHDStream ? cleanForChunklist(fullChunklistUrl) : fullChunklistUrl;
+            const chunklistName = cacheLayer.getChunklistFromUrl(chunklistUrlForName);
+            if (this.network === 'foxone' && isUHDStream) {
+              const fullUrl = urlParams ? mergeQueryParams(fullChunklistUrl, urlParams) : fullChunklistUrl;
+              this.chunklistUrlMap.set(chunklistName, fullUrl);
+            }
+            updatedManifest = updatedManifest.replace(track[1], `${this.baseProxyUrl}${chunklistName}.m3u8`);
+          }
+        });
+
+        if (this.network === 'foxone' && isUHDStream && audioTracks.length === 0 && subTracks.length === 0) {
+          if (playlist.media && playlist.media.length > 0) {
+            playlist.media.forEach(media => {
+              if (media.type === 'AUDIO' || media.type === 'SUBTITLES') {
+                const fullChunklistUrl = parseReplacementUrl(media.uri, realManifestUrl);
+                const chunklistUrlForName = cleanForChunklist(fullChunklistUrl);
+                const chunklistName = cacheLayer.getChunklistFromUrl(chunklistUrlForName);
+                const fullUrl = urlParams ? mergeQueryParams(fullChunklistUrl, urlParams) : fullChunklistUrl;
+                this.chunklistUrlMap.set(chunklistName, fullUrl);
+                updatedManifest = updatedManifest.replace(media.uri, `${this.baseProxyUrl}${chunklistName}.m3u8`);
+              }
+            });
+          } else {
+            const lines = processedManifest.split('\n');
+            lines.forEach(line => {
+              if (line.includes('TYPE=AUDIO') || line.includes('TYPE=SUBTITLES')) {
+                const uriMatch = line.match(/URI="([^"]+?)"/);
+                if (uriMatch && uriMatch[1]) {
+                  const fullChunklistUrl = parseReplacementUrl(uriMatch[1], realManifestUrl);
+                  const chunklistUrlForName = cleanForChunklist(fullChunklistUrl);
+                  const chunklistName = cacheLayer.getChunklistFromUrl(chunklistUrlForName);
+                  const fullUrl = urlParams ? mergeQueryParams(fullChunklistUrl, urlParams) : fullChunklistUrl;
+                  this.chunklistUrlMap.set(chunklistName, fullUrl);
+                  updatedManifest = updatedManifest.replace(uriMatch[1], `${this.baseProxyUrl}${chunklistName}.m3u8`);
+                }
+              }
+            });
+          }
+        }
+      }
+
       playlist.variants?.forEach(variant => {
         const fullChunklistUrl = parseReplacementUrl(variant.uri, realManifestUrl);
-
-        const chunklistName = cacheLayer.getChunklistFromUrl(`${fullChunklistUrl}${urlParams}`);
+        const chunklistUrlForName = this.network === 'foxone' && isUHDStream ? cleanForChunklist(fullChunklistUrl) : fullChunklistUrl;
+        const chunklistName = cacheLayer.getChunklistFromUrl(chunklistUrlForName);
+        if (this.network === 'foxone' && isUHDStream) {
+          const fullUrl = urlParams ? mergeQueryParams(fullChunklistUrl, urlParams) : fullChunklistUrl;
+          this.chunklistUrlMap.set(chunklistName, fullUrl);
+        }
         updatedManifest = updatedManifest.replace(variant.uri, `${this.baseProxyUrl}${chunklistName}.m3u8`);
       });
 
@@ -187,6 +282,7 @@ export class PlaylistHandler {
     } catch (e) {
       console.error(e);
       console.log('Could not parse M3U8 properly!');
+      throw e;
     }
   }
 
@@ -202,7 +298,11 @@ export class PlaylistHandler {
     const proxyAllSegments = await proxySegments();
 
     try {
-      const url = cacheLayer.getChunklistFromId(chunkListId);
+      let url = this.chunklistUrlMap.get(chunkListId);
+      if (!url) {
+        url = cacheLayer.getChunklistFromId(chunkListId);
+      }
+
       const headers = await this.getHeaders();
 
       const {data: chunkList, request} = await axios.get<string>(url, {
@@ -213,11 +313,13 @@ export class PlaylistHandler {
         },
       });
 
+      const processedChunklist = this.network === 'foxone' ? handleDateranges(chunkList, this.network) : chunkList;
+
       const realChunklistUrl = request.res.responseUrl;
       const baseManifestUrl = cleanUrl(createBaseUrlChunklist(realChunklistUrl, this.network));
       const keys = new Set<string>();
 
-      const clonedChunklist = updateVersion(chunkList);
+      const clonedChunklist = updateVersion(processedChunklist);
       let updatedChunkList = clonedChunklist;
 
       const chunks = HLS.parse(clonedChunklist);
@@ -296,6 +398,7 @@ export class PlaylistHandler {
     } catch (e) {
       console.error(e);
       console.log('Could not parse chunklist properly!');
+      throw e;
     }
   }
 

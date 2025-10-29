@@ -13,6 +13,10 @@ export const useEspnPlus = process.env.ESPNPLUS?.toLowerCase() === 'true' ? true
 export const useFoxSports = process.env.FOXSPORTS?.toLowerCase() === 'true' ? true : false;
 export const useFoxOnly4k = process.env.FOX_ONLY_4K?.toLowerCase() === 'true' ? true : false;
 
+export const useFoxOne = process.env.FOXONE?.toLowerCase() === 'true' ? true : false;
+export const useFoxOneOnly4k = process.env.FOXONE_ONLY_4K?.toLowerCase() === 'true' ? true : false;
+
+
 export const useMLBtv = process.env.MLBTV?.toLowerCase() === 'true' ? true : false;
 export const useMLBtvOnlyFree = process.env.MLBTV_ONLY_FREE?.toLowerCase() === 'true' ? true : false;
 

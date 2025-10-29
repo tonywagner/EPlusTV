@@ -12,6 +12,9 @@ export const cbsSportsUserAgent = 'CBSSports/7.4.0-1739899507 (androidtv)';
 export const androidFoxUserAgent =
   'foxsports-androidtv/3.42.1 (Linux;Android 9.0.0;SHIELD Android TV) ExoPlayerLib/2.12.1';
 
+export const androidFoxOneUserAgent =
+  'foxone-androidtv/1.3.0 (Linux; Android 12; en-us; onn. 4K Streaming Box Build/SGZ1.221127.063.A1.9885170)';
+
 export const okHttpUserAgent = 'okhttp/4.11.0';
 
 export const floSportsUserAgent =

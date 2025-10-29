@@ -22,9 +22,13 @@ export const generateM3u = async (uri: string, linear = false, excludeGracenote 
         }
       }
 
-      if (excludeGracenote && (val.stationId || val.tvgName)) {
+      // Resolve tvgName and stationId, handling async functions
+      const updatedTvgName = typeof val.tvgName === 'function' ? await val.tvgName() : val.tvgName;
+      const updatedStationId = typeof val.stationId === 'function' ? await val.stationId() : val.stationId;
+
+      if (excludeGracenote && (updatedStationId || updatedTvgName)) {
         continue;
-      } else if (!excludeGracenote && (!val.stationId || !val.tvgName)) {
+      } else if (!excludeGracenote && (!updatedStationId || !updatedTvgName)) {
         continue;
       }
 
@@ -33,7 +37,7 @@ export const generateM3u = async (uri: string, linear = false, excludeGracenote 
       if (excludeGracenote) {
         m3uFile = `${m3uFile}\n#EXTINF:0 tvg-id="${channelNum}.eplustv" channel-number="${channelNum}" tvg-chno="${channelNum}" tvg-name="${val.id}" group-title="EPlusTV", ${val.name}`;
       } else {
-        m3uFile = `${m3uFile}\n#EXTINF:0 tvg-id="${channelNum}.eplustv" channel-id="${val.name}" channel-number="${channelNum}" tvg-chno="${channelNum}" tvg-name="${val.tvgName}" tvc-guide-stationid="${val.stationId}" group-title="EPlusTV", ${val.name}`;
+        m3uFile = `${m3uFile}\n#EXTINF:0 tvg-id="${channelNum}.eplustv" channel-id="${val.provider}.${val.name}" channel-number="${channelNum}" tvg-chno="${channelNum}" tvg-name="${updatedTvgName}" tvc-guide-stationid="${updatedStationId}" group-title="EPlusTV", ${val.name}`;
       }
 
       m3uFile = `${m3uFile}\n${uri}/channels/${channelNum}.m3u8\n`;

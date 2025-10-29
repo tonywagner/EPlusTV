@@ -1,6 +1,7 @@
 import {db} from './database';
 import {espnHandler} from './espn-handler';
 import {foxHandler} from './fox-handler';
+import {foxOneHandler} from './foxone-handler';
 import {mlbHandler} from './mlb-handler';
 import {paramountHandler} from './paramount-handler';
 import {b1gHandler} from './b1g-handler';
@@ -49,6 +50,9 @@ const startChannelStream = async (channelId: string, appUrl: string) => {
       switch (playingNow.from) {
         case 'foxsports':
           [url, headers] = await foxHandler.getEventData(appStatus.channels[channelId].current);
+          break;
+        case 'foxone':
+          [url, headers] = await foxOneHandler.getEventData(appStatus.channels[channelId].current);
           break;
         case 'mlbtv':
           [url, headers] = await mlbHandler.getEventData(appStatus.channels[channelId].current);

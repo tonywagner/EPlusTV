@@ -24,6 +24,7 @@ export interface IMSGChannel {
   name: string;
   stationId: string;
   tvgName: string;
+  provider: string;
 }
 
 export interface IMSGChannelGroup {
@@ -42,6 +43,7 @@ const YES = {
     name: 'Yes Network',
     stationId: '30017',
     tvgName: 'YES',
+    provider: 'gotham',
   },
 } as const;
 
@@ -54,6 +56,7 @@ export const MSG_LINEAR: IMSGChannelMap = {
       name: 'MSG',
       stationId: '10979',
       tvgName: 'MSG',
+      provider: 'gotham',
     },
     61: {
       channelId: '6D250945-BB55-44D4-A5A9-3DF45DBE134E',
@@ -62,6 +65,7 @@ export const MSG_LINEAR: IMSGChannelMap = {
       name: 'MSG Sportsnet HD',
       stationId: '15273',
       tvgName: 'MSGSNNP',
+      provider: 'gotham',
     },
     62: {
       channelId: 'F1DA3786-A8A2-4C3D-B18E-F400F9C6EE0B',
@@ -70,6 +74,7 @@ export const MSG_LINEAR: IMSGChannelMap = {
       name: 'MSG2 HD',
       stationId: '70283',
       tvgName: 'MSG2HD',
+      provider: 'gotham',
     },
     63: {
       channelId: '0135EBDF-184F-41FA-B36C-46CDA4FC9B33',
@@ -78,6 +83,7 @@ export const MSG_LINEAR: IMSGChannelMap = {
       name: 'MSG Sportsnet 2 HD',
       stationId: '70285',
       tvgName: 'MSG2SNH',
+      provider: 'gotham',
     },
     ...YES,
   },
@@ -89,6 +95,7 @@ export const MSG_LINEAR: IMSGChannelMap = {
       name: 'MSG Zone 2',
       stationId: '42110',
       tvgName: 'MSGZN2',
+      provider: 'gotham',
     },
     61: {
       channelId: '89648E11-56FB-4A68-9B0B-D3ECC48FA75E',
@@ -97,6 +104,7 @@ export const MSG_LINEAR: IMSGChannelMap = {
       name: 'MSG Sportsnet Zone 2',
       stationId: '12605',
       tvgName: 'MSGSNZ2',
+      provider: 'gotham',
     },
     62: {
       channelId: '4A064EDA-8704-441A-B462-7F4DE770FE96',
@@ -105,6 +113,7 @@ export const MSG_LINEAR: IMSGChannelMap = {
       name: 'MSG2 Zone 2',
       stationId: '70283',
       tvgName: 'MSG2HD',
+      provider: 'gotham',
     },
     63: {
       channelId: 'F0A73CE5-6429-48A0-8551-FAFEA19C0A2B',
@@ -113,6 +122,7 @@ export const MSG_LINEAR: IMSGChannelMap = {
       name: 'MSG Sportsnet 2 Zone 2',
       stationId: '65623',
       tvgName: 'MSGSN22',
+      provider: 'gotham',
     },
     ...YES,
   },
@@ -124,6 +134,7 @@ export const MSG_LINEAR: IMSGChannelMap = {
       name: 'MSG Zone 3',
       stationId: '42111',
       tvgName: 'MSGZN3',
+      provider: 'gotham',
     },
     61: {
       channelId: '9A3CCB0A-49D1-41A5-A4FA-58C1B815625E',
@@ -132,6 +143,7 @@ export const MSG_LINEAR: IMSGChannelMap = {
       name: 'MSG Sportsnet Zone 3',
       stationId: '12338',
       tvgName: 'MSGSNZ3',
+      provider: 'gotham',
     },
     ...YES,
   },
@@ -143,6 +155,7 @@ export const MSG_LINEAR: IMSGChannelMap = {
       name: 'MSG Zone 4',
       stationId: '35555',
       tvgName: 'MSG4',
+      provider: 'gotham',
     },
     61: {
       channelId: '7B321549-610E-4CBC-94FF-76F50E29D972',
@@ -151,6 +164,7 @@ export const MSG_LINEAR: IMSGChannelMap = {
       name: 'MSG Sportsnet Zone 4',
       stationId: '15231',
       tvgName: 'MSGSNZ4',
+      provider: 'gotham',
     },
     ...YES,
   },
@@ -162,6 +176,7 @@ export const MSG_LINEAR: IMSGChannelMap = {
       name: 'MSG Zone 5',
       stationId: '35555',
       tvgName: 'MSGZN5',
+      provider: 'gotham',
     },
     61: {
       channelId: '41AFBC0C-219E-4FF1-826B-024E32167684',
@@ -170,6 +185,7 @@ export const MSG_LINEAR: IMSGChannelMap = {
       name: 'MSG Sportsnet Zone 5',
       stationId: '71133',
       tvgName: 'MSGSNZ5',
+      provider: 'gotham',
     },
     ...YES,
   },
@@ -181,6 +197,7 @@ export const MSG_LINEAR: IMSGChannelMap = {
       name: 'MSG Zone 6',
       stationId: '106048',
       tvgName: 'MSGZN6',
+      provider: 'gotham',
     },
     ...YES,
   },
@@ -192,6 +209,7 @@ export const MSG_LINEAR: IMSGChannelMap = {
       name: 'MSG Zone 3',
       stationId: '42111',
       tvgName: 'MSGZN3',
+      provider: 'gotham',
     },
   },
   'zone-8': {
@@ -202,6 +220,7 @@ export const MSG_LINEAR: IMSGChannelMap = {
       name: 'MSG',
       stationId: '10979',
       tvgName: 'MSG',
+      provider: 'gotham',
     },
     62: {
       channelId: '7C2382DE-6FE1-4DAD-B7EA-F5C6FEDAA460',
@@ -210,6 +229,7 @@ export const MSG_LINEAR: IMSGChannelMap = {
       name: 'MSG2 HD',
       stationId: '70283',
       tvgName: 'MSG2HD',
+      provider: 'gotham',
     },
     ...YES,
   },
@@ -221,6 +241,7 @@ export const MSG_LINEAR: IMSGChannelMap = {
       name: 'MSG Zone 10',
       stationId: '101378',
       tvgName: 'MSGZN10',
+      provider: 'gotham',
     },
     61: {
       channelId: '6444D94B-8D03-433B-B593-C321185BBA45',
@@ -229,6 +250,7 @@ export const MSG_LINEAR: IMSGChannelMap = {
       name: 'MSG Sportsnet Zone 3',
       stationId: '12338',
       tvgName: 'MSGSNZ3',
+      provider: 'gotham',
     },
     62: {
       channelId: '386186BD-E57C-4BC0-9A49-C6EBDE9FD5E3',
@@ -237,6 +259,7 @@ export const MSG_LINEAR: IMSGChannelMap = {
       name: 'MSG2 HD',
       stationId: '70283',
       tvgName: 'MSG2HD',
+      provider: 'gotham',
     },
     ...YES,
   },
@@ -249,6 +272,7 @@ export const MSG_LINEAR: IMSGChannelMap = {
       name: 'MSG Zone 10',
       stationId: '101378',
       tvgName: 'MSGZN10',
+      provider: 'gotham',
     },
     61: {
       channelId: '7B347484-D367-44EE-8BE8-49849D85CD58',
@@ -257,6 +281,7 @@ export const MSG_LINEAR: IMSGChannelMap = {
       name: 'MSG Sportsnet Zone 10',
       stationId: '100342',
       tvgName: 'MSGSN10',
+      provider: 'gotham',
     },
     62: {
       channelId: '7AAC51AF-7AD9-4B9B-B0A3-04969DFD578E',
@@ -265,6 +290,7 @@ export const MSG_LINEAR: IMSGChannelMap = {
       name: 'MSG2 Zone 2',
       stationId: '70283',
       tvgName: 'MSG2HD',
+      provider: 'gotham',
     },
     63: {
       channelId: '635C4873-0F80-42E1-BA01-F910EFE8B0BE',
@@ -273,6 +299,7 @@ export const MSG_LINEAR: IMSGChannelMap = {
       name: 'MSG Sportsnet 2 Zone 2',
       stationId: '65623',
       tvgName: 'MSGSN22',
+      provider: 'gotham',
     },
     ...YES,
   },
@@ -284,6 +311,7 @@ export const MSG_LINEAR: IMSGChannelMap = {
       name: 'MSG National',
       stationId: '80169',
       tvgName: 'MSGN',
+      provider: 'gotham',
     },
     61: {
       channelId: '417E2B8-B100-49EB-B5CE-1B077888D253',
@@ -292,6 +320,7 @@ export const MSG_LINEAR: IMSGChannelMap = {
       name: 'MSG Sportsnet HD',
       stationId: '15273',
       tvgName: 'MSGSNNP',
+      provider: 'gotham',
     },
     ...YES,
   },
@@ -312,6 +341,7 @@ export const MSG_LINEAR: IMSGChannelMap = {
       name: 'MSG Zone 4',
       stationId: '35555',
       tvgName: 'MSG4',
+      provider: 'gotham',
     },
     61: {
       channelId: '7B321549-610E-4CBC-94FF-76F50E29D972',
@@ -320,6 +350,7 @@ export const MSG_LINEAR: IMSGChannelMap = {
       name: 'MSG Sportsnet Zone 4',
       stationId: '15231',
       tvgName: 'MSGSNZ4',
+      provider: 'gotham',
     },
     ...YES,
   },
@@ -331,6 +362,7 @@ export const MSG_LINEAR: IMSGChannelMap = {
       name: 'MSG Zone 6',
       stationId: '106048',
       tvgName: 'MSGZN6',
+      provider: 'gotham',
     },
   },
   'zone-18': {
@@ -341,6 +373,7 @@ export const MSG_LINEAR: IMSGChannelMap = {
       name: 'MSG',
       stationId: '10979',
       tvgName: 'MSG',
+      provider: 'gotham',
     },
     61: {
       channelId: '41AFBC0C-219E-4FF1-826B-024E32167684',
@@ -349,6 +382,7 @@ export const MSG_LINEAR: IMSGChannelMap = {
       name: 'MSG Sportsnet Zone 5',
       stationId: '71133',
       tvgName: 'MSGSNZ5',
+      provider: 'gotham',
     },
   },
 } as const;
