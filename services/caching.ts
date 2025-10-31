@@ -84,7 +84,7 @@ class CacheLayer {
     return randomId;
   }
 
-  public async getDataFromSegment(segment: string, headers: IHeaders): Promise<ArrayBuffer> {
+  public async getDataFromSegment(segment: string, headers: IHeaders, network?: string): Promise<ArrayBuffer> {
     const url = this.keyMap.get(segment);
 
     if (!url) {
@@ -92,6 +92,10 @@ class CacheLayer {
     }
 
     try {
+      const isKey = segment.includes('-key-');
+      const isFoxOne = network === 'foxone';
+      const cacheTTL = (isFoxOne && isKey) ? 1000 * 30 : 1000 * 60 * 3; 
+
       const res = await promiseCache.getPromise<AxiosResponse<ArrayBuffer>>(
         segment,
         axios.get<ArrayBuffer>(url, {
@@ -101,7 +105,7 @@ class CacheLayer {
           },
           responseType: 'arraybuffer',
         }),
-        1000 * 60 * 3,
+        cacheTTL,
       );
 
       if (!res) {
@@ -112,26 +116,31 @@ class CacheLayer {
 
       const size = (data as any).length;
 
-      while (this.size + size > MAX_SIZE) {
-        const url = this.fifo.shift();
-        const segmentId = this.keyMap.get(url);
+      if (!(isFoxOne && isKey)) {
+        while (this.size + size > MAX_SIZE) {
+          const url = this.fifo.shift();
+          const segmentId = this.keyMap.get(url);
 
-        process.nextTick(() => {
-          promiseCache.removePromise(segmentId);
-          this.keyMap.delete(url);
-          this.keyMap.delete(segmentId);
-        });
+          process.nextTick(() => {
+            promiseCache.removePromise(segmentId);
+            this.keyMap.delete(url);
+            this.keyMap.delete(segmentId);
+          });
 
-        this.size -= size;
+          this.size -= size;
+        }
+
+        this.fifo.push(url);
+        this.size += size;
       }
-
-      this.fifo.push(url);
-      this.size += size;
 
       return data;
     } catch (e) {
-      console.error(e);
-      throw new Error(`Could not find URL for: ${segment}`);
+      if (network === 'foxone' && segment.includes('-key-')) {
+        promiseCache.removePromise(segment);
+      }
+      console.error(`Error fetching ${segment}:`, e.message || e);
+      throw new Error(`Could not fetch data for: ${segment}`);
     }
   }
 }
