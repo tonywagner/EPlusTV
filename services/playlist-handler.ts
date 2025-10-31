@@ -113,9 +113,10 @@ export class PlaylistHandler {
   public async getSegmentOrKey(segmentId: string): Promise<ArrayBuffer> {
     try {
       const headers = await this.getHeaders();
-      return cacheLayer.getDataFromSegment(segmentId, headers);
+      return cacheLayer.getDataFromSegment(segmentId, headers, this.network);
     } catch (e) {
       console.error(e);
+      throw e;
     }
   }
 
