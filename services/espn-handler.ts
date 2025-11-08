@@ -174,7 +174,7 @@ const BAM_API_KEY = 'ZXNwbiZicm93c2VyJjEuMC4w.ptUt7QxsteaRruuPmGZFaJByOoqKvDP2a5
 const BAM_APP_CONFIG =
   'https://bam-sdk-configs.bamgrid.com/bam-sdk/v2.0/espn-a9b93989/browser/v3.4/linux/chrome/prod.json';
 
-const LINEAR_NETWORKS = ['espn1', 'espn2', 'espnu', 'sec', 'acc', 'espnews', 'espndeportes', 'espnonabc'];
+const LINEAR_NETWORKS = ['espn1', 'espn2', 'espnu', 'sec', 'acc', 'espnews', 'espndeportes'];
 
 const urlBuilder = (endpoint: string, provider: string) =>
   `${DISNEY_ROOT_URL}${endpoint}`.replace('{id-provider}', provider);
@@ -284,9 +284,6 @@ const getNetworkInfo = (network?: string) => {
     packages = 'null';
   } else if (network === 'espndeportes') {
     networks = '["bba8fb76-57ff-3c63-998b-90fef8f4f8b6"]';
-    packages = 'null';
-  } else if (network === 'espnonabc') {
-    networks = '["c0d547f2-0fb7-4167-a734-105f55890ffc"]';
     packages = 'null';
   } else if (network === 'espn_free') {
     networks = '["8cc0ae94-324d-3123-859f-7b6a229b1b89"]';
@@ -620,19 +617,13 @@ class EspnHandler {
 
     const {linear_channels, meta} = await db.providers.findOneAsync<IProvider>({name: 'espn'});
 	
-    // update/add Deportes and ABC, if necessary
+    // update/add Deportes, if necessary
     if ( linear_channels.length <= 6 ) {
       linear_channels.push({
     	  enabled: false,
         id: 'espndeportes',
         name: 'ESPN Deportes',
         tmsId: '71914',
-      });
-      linear_channels.push({
-        enabled: false,
-        id: 'espnonabc',
-        name: 'ESPN on ABC',
-        tmsId: '28708',
       });
       await db.providers.updateAsync<IProvider<TESPNTokens>, any>(
         {name: 'espn'},
@@ -642,6 +633,22 @@ class EspnHandler {
           },
         },
       );
+    }
+	
+    // remove ESPN on ABC, if necessary
+    if ( linear_channels.length == 8 ) {
+      const removed_channel = linear_channels.pop();
+      if (removed_channel && removed_channel.name && (removed_channel.name == 'ESPN on ABC')) {
+        console.log('Removed ' + removed_channel.name);
+        await db.providers.updateAsync<IProvider<TESPNTokens>, any>(
+          {name: 'espn'},
+          {
+            $set: {
+              linear_channels: linear_channels,
+            },
+          },
+        );
+      }
     }
     if ( !('espn_free' in meta) ) {
       await db.providers.updateAsync({name: 'espn'}, {$set: {meta: {...meta, espn_free: false}}});

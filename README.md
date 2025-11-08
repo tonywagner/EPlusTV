@@ -63,7 +63,6 @@ Will create dedicated linear channels if using dedicated linear channels, otherw
 | ACC Network | Set if your TV provider supports it |
 | ESPNews | Set if your TV provider supports it |
 | ESPN Deportes | Set if your TV provider supports it |
-| ESPN on ABC | Set if your TV provider supports it |
 
 ##### Digital Networks
 
@@ -97,19 +96,19 @@ Will create dedicated linear channels if using dedicated linear channels, otherw
 
 | Network Name |
 |---|
-| FOX |
-| MyNetwork TV |
-| FS1 |
-| FS2 |
-| B1G Network |
-| FOX Deportes |
-| FOX News Channel |
-| FOX Business Network |
-| TMZ |
-| Masked Singer |
-| FOX Soul |
-| FOX Weather |
-| FOX Live Now |
+| FOX | Set if your TV provider supports it |
+| MyNetwork TV | Set if your TV provider supports it |
+| FS1 | Set if your TV provider supports it |
+| FS2 | Set if your TV provider supports it |
+| B1G Network | Set if your TV provider supports it |
+| FOX Deportes | Set if your TV provider supports it |
+| FOX News Channel | Set if your TV provider supports it |
+| FOX Business Network | Set if your TV provider supports it |
+| TMZ | Set if your TV provider supports it |
+| Masked Singer | Set if your TV provider supports it |
+| FOX Soul | Set if your TV provider supports it |
+| FOX Weather | Set if your TV provider supports it |
+| FOX Live Now | Set if your TV provider supports it |
 
 #### FOX Sports
 
@@ -121,11 +120,11 @@ Some events are on linear channels and some aren't. If you use dedicated linear 
 
 | Network Name |
 |---|
-| FS1 |
-| FS2 |
-| B1G Network |
-| FOX Soccer Plus |
-| FOX Deportes |
+| FS1 | Set if your TV provider supports it |
+| FS2 | Set if your TV provider supports it |
+| B1G Network | Set if your TV provider supports it |
+| FOX Soccer Plus | Set if your TV provider supports it |
+| FOX Deportes | Set if your TV provider supports it |
 
 #### Gotham Sports
 
