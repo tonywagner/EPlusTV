@@ -67,21 +67,6 @@ export const FoxSports: FC = async () => {
               Only grab 4K events?
             </label>
           </fieldset>
-          <fieldset>
-            <label>
-              <input
-                hx-put={`/providers/fox/toggle-studio`}
-                hx-trigger="change"
-                hx-target="#fox-body"
-                name="fox-hide-studio"
-                type="checkbox"
-                role="switch"
-                checked={hide_studio ? true : false}
-                data-enabled={hide_studio ? 'true' : 'false'}
-              />
-              Hide studio shows?
-            </label>
-          </fieldset>
         </div>
         <div id="fox-body" hx-swap="innerHTML">
           <FoxBody enabled={enabled} tokens={tokens} channels={channels} />

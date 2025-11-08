@@ -95,6 +95,15 @@ export const initMiscDb = async (): Promise<void> => {
     });
   }
 
+  const setupHideStudio = (await db.misc.countAsync({name: 'hide_studio'})) > 0 ? true : false;
+
+  if (!setupHideStudio) {
+    await db.misc.insertAsync<IMiscDbEntry<boolean>>({
+      name: 'hide_studio',
+      value: false,
+    });
+  }
+
   const setupEventFilters = (await db.misc.countAsync({name: 'category_filter'}) + await db.misc.countAsync({name: 'title_filter'})) == 2 ? true : false;
 
   if (!setupEventFilters) {
@@ -226,6 +235,15 @@ export const xmltvPadding = async (): Promise<boolean> => {
 
 export const setXmltvPadding = async (value: boolean): Promise<number> =>
   (await db.misc.updateAsync({name: 'xmltv_padding'}, {$set: {value}})).numAffected;
+
+export const hideStudio = async (): Promise<boolean> => {
+  const {value} = await db.misc.findOneAsync<IMiscDbEntry<boolean>>({name: 'hide_studio'});
+
+  return value;
+};
+
+export const setHideStudio = async (value: boolean): Promise<number> =>
+  (await db.misc.updateAsync({name: 'hide_studio'}, {$set: {value}})).numAffected;
 
 export const getCategoryFilter = async () => {
   const {value} = await db.misc.findOneAsync<IMiscDbEntry<string>>({name: 'category_filter'});

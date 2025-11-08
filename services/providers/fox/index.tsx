@@ -90,31 +90,6 @@ fox.put('/toggle-uhd', async c => {
   return c.html(<FoxBody enabled={enabled} tokens={tokens} channels={linear_channels} />);
 });
 
-fox.put('/toggle-studio', async c => {
-  const body = await c.req.parseBody();
-  const hide_studio = body['fox-hide-studio'] === 'on';
-
-  const {meta} = await db.providers.findOneAsync<IProvider>({name: 'foxsports'});
-
-  const {affectedDocuments} = await db.providers.updateAsync<IProvider<TFoxTokens>, any>(
-    {name: 'foxsports'},
-    {
-      $set: {
-        meta: {
-          ...meta,
-          hide_studio,
-        },
-      },
-    },
-    {
-      returnUpdatedDocs: true,
-    },
-  );
-  const {enabled, tokens, linear_channels} = affectedDocuments as IProvider<TFoxTokens>;
-
-  return c.html(<FoxBody enabled={enabled} tokens={tokens} channels={linear_channels} />);
-});
-
 fox.get('/tve-login/:code', async c => {
   const code = c.req.param('code');
 

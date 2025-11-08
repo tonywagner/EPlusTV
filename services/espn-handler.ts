@@ -38,7 +38,7 @@ import {
 } from './shared-interfaces';
 import {db} from './database';
 import {debug} from './debug';
-import {usesLinear} from './misc-db-service';
+import {usesLinear, hideStudio} from './misc-db-service';
 import {removeEntriesNetwork} from './build-schedule';
 
 global.WebSocket = ws;
@@ -114,7 +114,6 @@ interface ITokens extends IToken {
 
 export interface IEspnPlusMeta {
   use_ppv?: boolean;
-  hide_studio?: boolean;
   zip_code?: string;
   in_market_teams?: string;
 }
@@ -369,6 +368,7 @@ const parseCategories = event => {
 
 const parseAirings = async events => {
   const useLinear = await usesLinear();
+  const hide_studio = await hideStudio();
 
   const [now, endSchedule] = normalTimeRange();
 
@@ -391,7 +391,7 @@ const parseAirings = async events => {
     if (!entryExists) {
       const isLinear = useLinear && event.network?.id && LINEAR_NETWORKS.some(n => n === event.network?.id);
 
-      if (!isLinear && plusMeta?.hide_studio && event.program?.isStudio) {
+      if (!isLinear && hide_studio && event.program?.isStudio) {
         continue;
       }
 
@@ -507,7 +507,6 @@ class EspnHandler {
       await db.providers.insertAsync<IProvider<TESPNPlusTokens, IEspnPlusMeta>>({
         enabled: useEspnPlus,
         meta: {
-          hide_studio: false,
           in_market_teams: '',
           use_ppv: useEspnPpv,
           zip_code: '',

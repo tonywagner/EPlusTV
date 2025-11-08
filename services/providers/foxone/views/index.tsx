@@ -65,22 +65,7 @@ export const FoxOne: FC = async () => {
               />
               Only grab 4K events?
             </label>
-          </fieldset>
-          <fieldset>
-            <label>
-              <input
-                hx-put={`/providers/foxone/toggle-studio`}
-                hx-trigger="change"
-                hx-target="#foxone-body"
-                name="foxone-hide-studio"
-                type="checkbox"
-                role="switch"
-                checked={meta.hide_studio ? true : false}
-                data-enabled={meta.hide_studio ? 'true' : 'false'}
-              />
-              Hide studio shows?
-            </label>
-          </fieldset>                 
+          </fieldset>               
         </div>
         <div id="foxone-body" hx-swap="innerHTML">
           <FoxOneBody enabled={enabled} tokens={tokens} channels={channels} />

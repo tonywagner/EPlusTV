@@ -13,7 +13,7 @@ import {getRandomHex, normalTimeRange} from './shared-helpers';
 import {ClassTypeWithoutMethods, IEntry, IProvider, TChannelPlaybackInfo} from './shared-interfaces';
 import {db} from './database';
 import {debug} from './debug';
-import {usesLinear} from './misc-db-service';
+import {usesLinear, hideStudio} from './misc-db-service';
 
 interface IAppConfig {
   network: {
@@ -77,7 +77,6 @@ interface IFoxOneMeta {
   uhd?: boolean;
   dtc_events?: boolean;
   local_station_call_signs?: string[] | string;
-  hide_studio?: boolean;
 }
 
 const foxOneConfigPath = path.join(configPath, 'foxone_tokens.json');
@@ -114,6 +113,7 @@ const parseCategories = (event: IFoxOneEvent) => {
 
 const parseAirings = async (events: IFoxOneEvent[]) => {
   const useLinear = await usesLinear();
+  const hide_studio = await hideStudio();
 
   const [now, inTwoDays] = normalTimeRange();
 
@@ -129,7 +129,7 @@ const parseAirings = async (events: IFoxOneEvent[]) => {
         continue;
       }
 
-      if (!isLinear && meta?.hide_studio && !event.is_sportingevent) {
+      if (!isLinear && hide_studio && !event.is_sportingevent) {
         continue;
       }
       
@@ -309,7 +309,6 @@ class FoxOneHandler {
           only4k: useFoxOneOnly4k,
           uhd: getMaxRes(process.env.MAX_RESOLUTION) === 'UHD/HDR',
           local_station_call_signs: '',
-          hide_studio: false,
         },
         name: 'foxone',
         tokens: data,

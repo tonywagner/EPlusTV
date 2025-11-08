@@ -84,22 +84,6 @@ export const ESPNPlus: FC = async () => {
                 </div>
               </form>
             </fieldset>
-            <fieldset>
-              <label>
-                Hide studio shows?&nbsp;&nbsp;
-                <input
-                  hx-put={`/providers/espnplus/toggle-studio`}
-                  hx-trigger="change"
-                  name="espnplus-hide-studio"
-                  hx-target="this"
-                  hx-swap="afterend"
-                  type="checkbox"
-                  role="switch"
-                  checked={meta.hide_studio ? true : false}
-                  data-enabled={meta.hide_studio ? 'true' : 'false'}
-                />
-              </label>
-            </fieldset>
           </details>
         </div>
         <div id="espnplus-body" hx-swap="innerHTML">

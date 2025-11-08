@@ -13,7 +13,7 @@ import {getRandomHex, normalTimeRange} from './shared-helpers';
 import {ClassTypeWithoutMethods, IEntry, IProvider, TChannelPlaybackInfo} from './shared-interfaces';
 import {db} from './database';
 import {debug} from './debug';
-import {usesLinear} from './misc-db-service';
+import {usesLinear, hideStudio} from './misc-db-service';
 
 interface IAppConfig {
   api: {
@@ -79,7 +79,6 @@ interface IFoxMeta {
   uhd?: boolean;
   dtc_events?: boolean;
   local_station_call_sign?: string;
-  hide_studio?: boolean;
 }
 
 const EPG_API_KEY = [
@@ -151,6 +150,7 @@ const parseCategories = (event: IFoxEvent) => {
 
 const parseAirings = async (events: IFoxEvent[]) => {
   const useLinear = await usesLinear();
+  const hide_studio = await hideStudio();
 
   const [now, inTwoDays] = normalTimeRange();
 
@@ -182,7 +182,7 @@ const parseAirings = async (events: IFoxEvent[]) => {
 
       const studio_regex = /Sports (Commentary|Highlights|Magazine|talk)/i;
       const isStudio = categories.find(item => item.match(studio_regex));
-      if (!isLinear && meta?.hide_studio && isStudio) {
+      if (!isLinear && hide_studio && isStudio) {
         continue;
       }
 
@@ -277,7 +277,6 @@ class FoxHandler {
           only4k: useFoxOnly4k,
           uhd: getMaxRes(process.env.MAX_RESOLUTION) === 'UHD/HDR',
           local_station_call_sign: '',
-          hide_studio: false,
         },
         name: 'foxsports',
         tokens: data,

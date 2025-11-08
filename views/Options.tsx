@@ -6,6 +6,7 @@ import {
   proxySegments,
   usesLinear,
   xmltvPadding,
+  hideStudio,
   getCategoryFilter,
   getTitleFilter,
 } from '@/services/misc-db-service';
@@ -16,6 +17,7 @@ export const Options: FC = async () => {
   const linearChannels = await usesLinear();
   const proxiedSegments = await proxySegments();
   const xmltvPadded = await xmltvPadding();
+  const hide_studio = await hideStudio();
   const categoryFilter = await getCategoryFilter();
   const titleFilter = await getTitleFilter();
 
@@ -138,6 +140,22 @@ export const Options: FC = async () => {
               data-enabled={xmltvPadded ? 'true' : 'false'}
             />
             Pad XMLTV event end times?
+          </label>
+        </fieldset>
+        <fieldset>
+          <label>
+            <input
+              hx-post="/hide-studio"
+              hx-target="this"
+              hx-swap="outerHTML"
+              hx-trigger="change"
+              name="hide-studio"
+              type="checkbox"
+              role="switch"
+              checked={hide_studio}
+              data-enabled={hide_studio ? 'true' : 'false'}
+            />
+            Hide studio shows?
           </label>
         </fieldset>
       </div>

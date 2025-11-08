@@ -98,6 +98,7 @@ import {
   setStartChannel,
   usesLinear,
   setXmltvPadding,
+  setHideStudio,
   setEventFilters,
   getLatestVersion,
   getLastModified,
@@ -371,6 +372,33 @@ app.post('/xmltv-padding', async c => {
       'HX-Trigger': `{"HXToast":{"type":"success","body":"Successfully ${
         enabled ? 'enabled' : 'disabled'
       } XMLTV padding"}}`,
+    },
+  );
+});
+
+app.post('/hide-studio', async c => {
+  const body = await c.req.parseBody();
+  const enabled = body['hide-studio'] === 'on';
+
+  await setHideStudio(enabled);
+
+  return c.html(
+    <input
+      hx-post="/hide-studio"
+      hx-target="this"
+      hx-swap="outerHTML"
+      hx-trigger="change"
+      name="hide-studio"
+      type="checkbox"
+      role="switch"
+      checked={enabled}
+      data-enabled={enabled ? 'true' : 'false'}
+    />,
+    200,
+    {
+      'HX-Trigger': `{"HXToast":{"type":"success","body":"Successfully ${
+        enabled ? 'enabled' : 'disabled'
+      } hiding studio shows"}}`,
     },
   );
 });

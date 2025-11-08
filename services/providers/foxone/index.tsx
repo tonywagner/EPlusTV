@@ -90,33 +90,6 @@ foxone.put('/toggle-uhd', async c => {
   return c.html(<FoxOneBody enabled={enabled} tokens={tokens} channels={linear_channels} />);
 });
 
-foxone.put('/toggle-studio', async c => {
-  const body = await c.req.parseBody();
-  const hide_studio = body['foxone-hide-studio'] === 'on';
-
-  const {meta} = await db.providers.findOneAsync<IProvider>({name: 'foxone'});
-
-  const {affectedDocuments} = await db.providers.updateAsync<IProvider<TFoxOneTokens>, any>(
-    {name: 'foxone'},
-    {
-      $set: {
-        meta: {
-          ...meta,
-          hide_studio,
-        },
-      },
-    },
-    {
-      returnUpdatedDocs: true,
-    },
-  );
-  const {enabled, tokens, linear_channels} = affectedDocuments as IProvider<TFoxOneTokens>;
-
-  removeAndSchedule();
-
-  return c.html(<FoxOneBody enabled={enabled} tokens={tokens} channels={linear_channels} />);
-});
-
 foxone.get('/tve-login/:code', async c => {
   const code = c.req.param('code');
 
