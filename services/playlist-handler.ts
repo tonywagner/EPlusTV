@@ -115,8 +115,9 @@ export class PlaylistHandler {
       const headers = await this.getHeaders();
       return cacheLayer.getDataFromSegment(segmentId, headers, this.network);
     } catch (e) {
+      console.log('Could not get segment or key properly!');
       console.error(e);
-      throw e;
+      //throw e;
     }
   }
 
@@ -281,9 +282,9 @@ export class PlaylistHandler {
 
       this.playlist = updatedManifest;
     } catch (e) {
-      console.error(e);
       console.log('Could not parse M3U8 properly!');
-      throw e;
+      console.error(e);
+      //throw e;
     }
   }
 
@@ -397,9 +398,9 @@ export class PlaylistHandler {
 
       return updatedChunkList;
     } catch (e) {
-      console.error(e);
       console.log('Could not parse chunklist properly!');
-      throw e;
+      console.error(e);
+      //throw e;
     }
   }
 
