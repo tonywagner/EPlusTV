@@ -255,19 +255,19 @@ class FoxHandler {
         enabled: useFoxSports,
         linear_channels: [
           {
-            enabled: true,
+            enabled: false,
             id: 'fs1',
             name: 'FS1',
             tmsId: '82547',
           },
           {
-            enabled: true,
+            enabled: false,
             id: 'fs2',
             name: 'FS2',
             tmsId: '59305',
           },
           {
-            enabled: true,
+            enabled: false,
             id: 'btn',
             name: 'B1G Network',
             tmsId: '58321',
@@ -302,13 +302,13 @@ class FoxHandler {
     // update/add Soccer Plus and Deportes, if necessary
     if ( linear_channels.length <= 4 ) {
       linear_channels[3] = {
-    	enabled: true,
+    	enabled: false,
         id: 'fox-soccer-plus',
         name: 'FOX Soccer Plus',
         tmsId: '66880',
       };
       linear_channels.push({
-        enabled: true,
+        enabled: false,
         id: 'foxdep',
         name: 'FOX Deportes',
         tmsId: '72189',
@@ -514,6 +514,8 @@ class FoxHandler {
     }
 
     const useLinear = await usesLinear();
+    
+    const {linear_channels} = await db.providers.findOneAsync<IProvider>({name: 'foxsports'});
 
     const events: IFoxEvent[] = [];
 
@@ -545,12 +547,14 @@ class FoxHandler {
         debug.saveRequestData(data, 'foxsports', 'epg');
 
         _.forEach(data.data.listings.items, m => {
+          const isChannelEnabled = linear_channels.find(c => c.id === m.network && c.enabled === true);
           if (
             checkEventNetwork(this.entitlements, m) &&
             !m.audio_only &&
             m.start_time &&
             m.end_time &&
-            m.entity_id
+            m.entity_id &&
+            isChannelEnabled
           ) {
             if (!useLinear) {
               if (m.airing_type === 'live' || m.airing_type === 'new') {

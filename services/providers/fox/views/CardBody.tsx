@@ -31,6 +31,18 @@ export const FoxBody: FC<IFoxBodyProps> = ({enabled, tokens, open, channels}) =>
         <tbody>
           {channels.map(c => (
             <tr key={c.id}>
+              <td>
+                <input
+                  hx-target="this"
+                  hx-swap="outerHTML"
+                  type="checkbox"
+                  checked={c.enabled}
+                  data-enabled={c.enabled ? 'true' : 'false'}
+                  hx-put={`/providers/fox/channels/toggle/${c.id}`}
+                  hx-trigger="change"
+                  name="channel-enabled"
+                />
+              </td>
               <td>{c.name}</td>
             </tr>
           ))}

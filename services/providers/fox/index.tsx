@@ -120,3 +120,47 @@ fox.get('/tve-login/:code', async c => {
 fox.put('/reauth', async c => {
   return c.html(<Login />);
 });
+
+fox.put('/channels/toggle/:id', async c => {
+  const channelId = c.req.param('id');
+  const {linear_channels} = await db.providers.findOneAsync<IProvider>({name: 'foxsports'});
+
+  const body = await c.req.parseBody();
+  const enabled = body['channel-enabled'] === 'on';
+
+  let updatedChannel = '';
+
+  const updatedChannels = linear_channels.map(channel => {
+    if (channel.id === channelId) {
+      updatedChannel = channel.name;
+      return {...channel, enabled: !channel.enabled};
+    }
+    return channel;
+  });
+
+  if (updatedChannel !== '') {
+    await db.providers.updateAsync<IProvider<TFoxTokens>, any>({name: 'foxsports'}, {$set: {linear_channels: updatedChannels}});
+
+    // Kickoff event scheduler
+    scheduleEvents();
+
+    return c.html(
+      <input
+        hx-target="this"
+        hx-swap="outerHTML"
+        type="checkbox"
+        checked={enabled ? true : false}
+        data-enabled={enabled ? 'true' : 'false'}
+        hx-put={`/providers/fox/channels/toggle/${channelId}`}
+        hx-trigger="change"
+        name="channel-enabled"
+      />,
+      200,
+      {
+        ...(enabled && {
+          'HX-Trigger': `{"HXToast":{"type":"success","body":"Successfully enabled ${updatedChannel}"}}`,
+        }),
+      },
+    );
+  }
+});
