@@ -284,7 +284,6 @@ class FoxOneHandler {
             enabled: false,
             id: 'FOX Digital',
             name: 'Masked Singer',
-            tmsId: '192070',
           },
           {
             enabled: false,
