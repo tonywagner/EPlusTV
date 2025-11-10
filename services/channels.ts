@@ -386,8 +386,6 @@ export const CHANNELS = {
         id: 'FOX Digital',
         logo: 'https://tmsimg.fancybits.co/assets/GNLZZGG0027SNRC.png?w=360&h=270',
         name: 'Masked Singer',
-        stationId: '192070',
-        tvgName: 'FMSCFO',
         provider: 'foxone',
       }, 
       120: {
