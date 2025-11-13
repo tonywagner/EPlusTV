@@ -353,7 +353,7 @@ class HudlHandler {
             '&site_id=',
             encodeURIComponent(meta.sites.map((s) => s.id).join(',')),
             '&before=',
-            encodeURIComponent(moment(inTwoDays).add(1, 'day').format('ddd, DD MMM YYYY')),
+            encodeURIComponent(moment(inTwoDays).add(1, 'day').format('ddd, DD MMM YYYY HH:mm:ss [GMT]')),
             '&viewer_status=3&sort_by=date&sort_dir=asc',
           ].join('');
             
