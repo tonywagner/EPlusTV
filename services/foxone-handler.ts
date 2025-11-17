@@ -161,7 +161,7 @@ const parseAirings = async (events: IFoxOneEvent[]) => {
         end: end.valueOf(),
         from: 'foxone',
         id: event.entity_id,
-        image: event.images.logo || event.images.series_detail || event.images.series_list,
+        image: event.images?.logo || event.images?.series_detail || event.images?.series_list,
         name: eventName,
         network: event.call_sign,
         originalEnd: originalEnd.valueOf(),
