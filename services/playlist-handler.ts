@@ -17,7 +17,7 @@ const createBaseUrlChunklist = (url: string, network: string): string => {
   const cleaned = url.replace(/\.m3u8.*$/, '');
   let filteredUrl: string[] | string = cleaned.split('/');
 
-  if ((network === 'foxsports' || network === 'foxone') && !url.includes('akamai')) {
+  if (network === 'foxsports' && !url.includes('akamai')) {
     filteredUrl = filteredUrl.filter(seg => !seg.match(/=/));
   }
 
@@ -327,7 +327,7 @@ export class PlaylistHandler {
       const chunks = HLS.parse(clonedChunklist);
 
       const shouldProxy =
-        proxyAllSegments || baseManifestUrl.includes('akamai') || this.network === 'mlbtv' || this.network === 'gotham';
+        proxyAllSegments || (this.network === 'foxsports' && baseManifestUrl.includes('akamai')) || this.network === 'mlbtv' || this.network === 'gotham';
 
       chunks.segments.forEach(segment => {
         const segmentUrl = segment.uri;
