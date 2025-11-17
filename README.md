@@ -64,15 +64,6 @@ Will create dedicated linear channels if using dedicated linear channels, otherw
 | ESPNews | Set if your TV provider supports it |
 | ESPN Deportes | Set if your TV provider supports it |
 
-##### Digital Networks
-
-| Network Name | Description |
-|---|---|
-| ESPN3 | Set if your TV provider or ISP supports it |
-| SEC Network+ | Set if your TV provider supports it |
-| ACC Network Extra | Set if your TV provider supports it |
-| @ESPN | Available for free |
-
 #### ESPN Account
 
 Formerly ESPN+. Still available to login with ESPN credentials, but does not provide access to events anymore.

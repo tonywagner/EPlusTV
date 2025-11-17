@@ -654,9 +654,9 @@ class EspnHandler {
       await db.providers.updateAsync({name: 'espn'}, {$set: {meta: {...meta, espn_free: false}}});
     }
     
-    if (await isEnabled('espn3isp') && await isEnabled('espn3')) {
+    /*if (await isEnabled('espn3isp') && await isEnabled('espn3')) {
       console.log('Currently expecting ESPN3 access via ISP, re-authenticate if that is no longer true');
-    }
+    }*/
 
     const enabled = await isEnabled();
 
@@ -665,6 +665,11 @@ class EspnHandler {
     }
     
     await removeEntriesNetwork('ESPN+');
+    
+    await removeEntriesNetwork('ESPN3');
+    await removeEntriesNetwork('SEC Network +');
+    await removeEntriesNetwork('ACCNX');
+    await removeEntriesNetwork('@ESPN');
 
     /*const {meta: plusMeta} = await db.providers.findOneAsync<IProvider<TESPNPlusTokens, IEspnPlusMeta>>({
       name: 'espnplus',
@@ -733,10 +738,10 @@ class EspnHandler {
         const liveEntries = await this.getLiveEvents('espn2');
         entries = [...entries, ...liveEntries];
       }
-      if (espn3Enabled) {
+      /*if (espn3Enabled) {
         const liveEntries = await this.getLiveEvents('espn3');
         entries = [...entries, ...liveEntries];
-      }
+      }*/
       if (isChannelEnabled('espnu')) {
         const liveEntries = await this.getLiveEvents('espnU');
         entries = [...entries, ...liveEntries];
@@ -745,18 +750,18 @@ class EspnHandler {
         const liveEntries = await this.getLiveEvents('secn');
         entries = [...entries, ...liveEntries];
       }
-      if (secPlusEnabled) {
+      /*if (secPlusEnabled) {
         const liveEntries = await this.getLiveEvents('secnPlus');
         entries = [...entries, ...liveEntries];
-      }
+      }*/
       if (isChannelEnabled('acc')) {
         const liveEntries = await this.getLiveEvents('accn');
         entries = [...entries, ...liveEntries];
       }
-      if (accnxEnabled) {
+      /*if (accnxEnabled) {
         const liveEntries = await this.getLiveEvents('accnx');
         entries = [...entries, ...liveEntries];
-      }
+      }*/
       if (isChannelEnabled('espnews')) {
         const liveEntries = await this.getLiveEvents('espnews');
         entries = [...entries, ...liveEntries];
@@ -765,14 +770,14 @@ class EspnHandler {
         const liveEntries = await this.getLiveEvents('espndeportes');
         entries = [...entries, ...liveEntries];
       }
-      if (isChannelEnabled('espnonabc')) {
+      /*if (isChannelEnabled('espnonabc')) {
         const liveEntries = await this.getLiveEvents('espnonabc');
         entries = [...entries, ...liveEntries];
-      }
-      if (espnFreeEnabled) {
+      }*/
+      /*if (espnFreeEnabled) {
         const liveEntries = await this.getLiveEvents('espn_free');
         entries = [...entries, ...liveEntries];
-      }
+      }*/
       if (espnPpvEnabled) {
         const liveEntries = await this.getLiveEvents('espn_ppv');
         entries = [...entries, ...liveEntries];
@@ -799,10 +804,10 @@ class EspnHandler {
           const upcomingEntries = await this.getUpcomingEvents(date.format('YYYY-MM-DD'), 'espn2');
           entries = [...entries, ...upcomingEntries];
         }
-        if (espn3Enabled) {
+        /*if (espn3Enabled) {
           const upcomingEntries = await this.getUpcomingEvents(date.format('YYYY-MM-DD'), 'espn3');
           entries = [...entries, ...upcomingEntries];
-        }
+        }*/
         if (isChannelEnabled('espnu')) {
           const upcomingEntries = await this.getUpcomingEvents(date.format('YYYY-MM-DD'), 'espnU');
           entries = [...entries, ...upcomingEntries];
@@ -811,18 +816,18 @@ class EspnHandler {
           const upcomingEntries = await this.getUpcomingEvents(date.format('YYYY-MM-DD'), 'secn');
           entries = [...entries, ...upcomingEntries];
         }
-        if (secPlusEnabled) {
+        /*if (secPlusEnabled) {
           const upcomingEntries = await this.getUpcomingEvents(date.format('YYYY-MM-DD'), 'secnPlus');
           entries = [...entries, ...upcomingEntries];
-        }
+        }*/
         if (isChannelEnabled('acc')) {
           const upcomingEntries = await this.getUpcomingEvents(date.format('YYYY-MM-DD'), 'accn');
           entries = [...entries, ...upcomingEntries];
         }
-        if (accnxEnabled) {
+        /*if (accnxEnabled) {
           const upcomingEntries = await this.getUpcomingEvents(date.format('YYYY-MM-DD'), 'accnx');
           entries = [...entries, ...upcomingEntries];
-        }
+        }*/
         if (isChannelEnabled('espnews')) {
           const upcomingEntries = await this.getUpcomingEvents(date.format('YYYY-MM-DD'), 'espnews');
           entries = [...entries, ...upcomingEntries];
@@ -831,14 +836,14 @@ class EspnHandler {
           const upcomingEntries = await this.getUpcomingEvents(date.format('YYYY-MM-DD'), 'espndeportes');
           entries = [...entries, ...upcomingEntries];
         }
-        if (isChannelEnabled('espnonabc')) {
+        /*if (isChannelEnabled('espnonabc')) {
           const upcomingEntries = await this.getUpcomingEvents(date.format('YYYY-MM-DD'), 'espnonabc');
           entries = [...entries, ...upcomingEntries];
-        }
-        if (espnFreeEnabled) {
+        }*/
+        /*if (espnFreeEnabled) {
           const upcomingEntries = await this.getUpcomingEvents(date.format('YYYY-MM-DD'), 'espn_free');
           entries = [...entries, ...upcomingEntries];
-        }
+        }*/
         if (espnPpvEnabled) {
           const upcomingEntries = await this.getUpcomingEvents(date.format('YYYY-MM-DD'), 'espn_ppv');
           entries = [...entries, ...upcomingEntries];
@@ -868,6 +873,7 @@ class EspnHandler {
           query: `{airing(id:"${eventId}",countryCode:"us",deviceType:SETTOP,tz:"Z") {id name description mrss:adobeRSS authTypes requiresLinearPlayback status:type startDateTime endDateTime duration source(authorization: SHIELD) { url authorizationType hasEspnId3Heartbeats hasNielsenWatermarks hasPassThroughAds commercialReplacement startSessionUrl } network { id type name adobeResource } image { url } sport { name code uid } league { name uid } program { code categoryCode isStudio } seekInSeconds simulcastAiringId airingId tracking { nielsenCrossId1 trackingId } eventId packages { name } language tier feedName brands { id name type }}}`,
         },
       });
+      console.log('scenarios ' + JSON.stringify(scenarios));
 
       if (!scenarios?.data?.airing?.source?.url.length || scenarios?.data?.airing?.status !== 'LIVE') {
         // console.log('Event status: ', scenarios?.data?.airing?.status);
@@ -884,6 +890,7 @@ class EspnHandler {
         // console.log('Scenario: ', scenarios?.data?.airing);
         isEspnPlus = false;
       }
+      console.log('scenarioUrl ' + scenarioUrl);
 
       if (isEspnPlus) {
         const {data} = await axios.get(scenarioUrl, {
@@ -900,6 +907,7 @@ class EspnHandler {
           Authorization: this.account_token.access_token,
         };
       } else {
+        console.log('not plus');
         let tokenType = 'DEVICE';
         let token = this.adobe_device_id;
 
@@ -916,6 +924,7 @@ class EspnHandler {
           !isFree &&
           _.some(scenarios?.data?.airing?.authTypes, (authType: string) => authType.toLowerCase() === 'mvpd')
         ) {
+          console.log('not free');
           // Try to get the media token, but if it fails, let's just try device authentication
           try {
             await this.authorizeEvent(eventId, scenarios?.data?.airing?.mrss);
