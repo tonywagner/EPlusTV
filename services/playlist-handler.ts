@@ -327,7 +327,7 @@ export class PlaylistHandler {
       const chunks = HLS.parse(clonedChunklist);
 
       const shouldProxy =
-        proxyAllSegments || (this.network === 'foxsports' && baseManifestUrl.includes('akamai')) || this.network === 'mlbtv' || this.network === 'gotham';
+        proxyAllSegments || (this.network !== 'foxone' && baseManifestUrl.includes('akamai')) || this.network === 'mlbtv' || this.network === 'gotham';
 
       chunks.segments.forEach(segment => {
         const segmentUrl = segment.uri;

@@ -873,7 +873,6 @@ class EspnHandler {
           query: `{airing(id:"${eventId}",countryCode:"us",deviceType:SETTOP,tz:"Z") {id name description mrss:adobeRSS authTypes requiresLinearPlayback status:type startDateTime endDateTime duration source(authorization: SHIELD) { url authorizationType hasEspnId3Heartbeats hasNielsenWatermarks hasPassThroughAds commercialReplacement startSessionUrl } network { id type name adobeResource } image { url } sport { name code uid } league { name uid } program { code categoryCode isStudio } seekInSeconds simulcastAiringId airingId tracking { nielsenCrossId1 trackingId } eventId packages { name } language tier feedName brands { id name type }}}`,
         },
       });
-      console.log('scenarios ' + JSON.stringify(scenarios));
 
       if (!scenarios?.data?.airing?.source?.url.length || scenarios?.data?.airing?.status !== 'LIVE') {
         // console.log('Event status: ', scenarios?.data?.airing?.status);
@@ -907,7 +906,6 @@ class EspnHandler {
           Authorization: this.account_token.access_token,
         };
       } else {
-        console.log('not plus');
         let tokenType = 'DEVICE';
         let token = this.adobe_device_id;
 
@@ -924,7 +922,6 @@ class EspnHandler {
           !isFree &&
           _.some(scenarios?.data?.airing?.authTypes, (authType: string) => authType.toLowerCase() === 'mvpd')
         ) {
-          console.log('not free');
           // Try to get the media token, but if it fails, let's just try device authentication
           try {
             await this.authorizeEvent(eventId, scenarios?.data?.airing?.mrss);
