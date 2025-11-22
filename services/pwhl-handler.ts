@@ -31,7 +31,7 @@ const parseAirings = async (events: IPWHLEvent[]) => {
     if (!entryExists) {
       const start = moment(event.start);
       const end = moment(event.start).add(3.5, 'hours');
-      const originalEnd = moment(end);
+      const originalEnd = moment(event.start).add(2.5, 'hours');
 
       if (end.isBefore(now) || start.isAfter(endSchedule)) {
         continue;
@@ -95,6 +95,13 @@ class PWHLHandler {
       const dom = await jsDomHelper('https://www.thepwhl.com/en/schedule');
 
       let a = 0;
+      
+      var timezone_map = {
+        E: 'America/New_York',
+        C: 'America/Chicago',
+        M: 'America/Denver',
+        P: 'America/Los_Angeles',
+      };
 
       while (a < 100) {
         const $ = cheerio.load(dom.serialize());
@@ -109,17 +116,26 @@ class PWHLHandler {
             const awayTeam = teams.eq(0).find('a').attr('title').replace(' Roster', '').trim().replace(/ +/g, ' ');
             const awayLogo = teams.eq(0).find('a').find('img').attr('src');
             const date = $el.find('.ht-ids-date').text().trim();
-            const time = $el.find('.ht-ids-time').text().trim();
+            var time = $el.find('.ht-ids-time').text().trim();
+            
+            if (time == 'TBD') return;
+            
+            var timeparts = time.split(/\s+/);
+            var timezone = timezone_map[timeparts.pop()[0]];
+            time = timeparts.join(' ');
 
-            const gameDate = moment
-              .tz(`${date} ${currentYear} ${time}`, 'ddd, MMM D YYYY h:mm A z', 'America/New_York')
+            var gameDate = moment
+              .tz(`${date} ${currentYear} ${time}`, 'ddd, MMM D YYYY h:mm A', timezone)
               .startOf('minute');
-
-            if (gameDate.isBefore(currentDate.add(-1, 'month'))) {
-              gameDate.add(1, 'year');
-
-              if (gameDate.year() !== currentYear) {
-                currentYear = gameDate.year();
+            if (!gameDate.isValid()) {
+              const nextYear = currentYear + 1;
+              gameDate = moment
+                .tz(`${date} ${nextYear} ${time}`, 'ddd, MMM D YYYY h:mm A', timezone)
+                .startOf('minute');
+              if (gameDate.isValid()) {
+                currentYear = nextYear;
+              } else {
+                return;
               }
             }
 

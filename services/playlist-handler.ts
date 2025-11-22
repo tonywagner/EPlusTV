@@ -37,6 +37,7 @@ const reAudioTrack = /#EXT-X-MEDIA:TYPE=AUDIO.*?,URI="([^"]+?)"/gm;
 const reMap = /#EXT-X-MAP:URI="([^"]+)"/gm;
 const reSubMap = /#EXT-X-MEDIA:TYPE=SUBTITLES.*?,URI="([^"]+?)"/gm;
 const reSubMapVictory = /#EXT-X-MEDIA:.*TYPE=SUBTITLES.*URI="([^"]+)"/gm;
+const reSubMapYT = /#EXT-X-MEDIA:URI="([^"]+)",TYPE=SUBTITLES.*/gm;
 const reVersion = /#EXT-X-VERSION:(\d+)/;
 
 const updateVersion = (playlist: string): string =>
@@ -209,7 +210,18 @@ export class PlaylistHandler {
         });
       }
 
-      if (this.network !== 'foxsports') {
+      if (this.network === 'pwhl') {
+        const subTracks = [...manifest.matchAll(reSubMapYT)];
+        subTracks.forEach(track => {
+          if (track && track[1]) {
+            const fullChunklistUrl = parseReplacementUrl(track[1], realManifestUrl);
+            const chunklistName = cacheLayer.getChunklistFromUrl(fullChunklistUrl);
+            updatedManifest = updatedManifest.replace(track[1], `${this.baseProxyUrl}${chunklistName}.m3u8`);
+          }
+        });
+      }
+
+      if (this.network !== 'foxsports' && this.network != 'pwhl') {
         const audioTracks = [...processedManifest.matchAll(reAudioTrack)];
         audioTracks.forEach(track => {
           if (track && track[1]) {
