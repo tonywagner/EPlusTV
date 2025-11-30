@@ -469,10 +469,10 @@ class NflHandler {
       const {data} = await axios.post(
         url,
         {
-          ...(this.checkTVEAccess() && {
-            idp: this.mvpdIdp,
-            mvpdUUID: this.mvpdUUID,
-            mvpdUserId: this.mvpdUserId,
+          ...((this.checkTVEAccess() || this.checkSundayTicketAccess()) && {
+            idp: this.mvpdIdp || 'youtube',
+            mvpdUUID: this.mvpdUUID || this.youTubeUUID,
+            mvpdUserId: this.mvpdUserId || this.youTubeUserId,
             networks: event.feed || 'NFLN',
           }),
         },
