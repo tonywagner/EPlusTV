@@ -58,7 +58,7 @@ const fillEvent = (event: IVictoryEvent): [string, string[]] => {
     // Texas high school football
     sport = 'Football';
     categories.push('Football', 'High School Football', 'Texas High School Football');
-  } else if (seriesName.includes('MASL') || seriesSlug.includes('MASL')) {
+  } else if (seriesName.includes('Major Arena Soccer League') || seriesSlug.includes('MajorArenaSoccerLeague')) {
     // Major Arena Soccer League
     sport = 'Soccer';
     categories.push('Soccer', 'MASL');
@@ -70,6 +70,10 @@ const fillEvent = (event: IVictoryEvent): [string, string[]] => {
     // Women's National Football Conference
     sport = 'Football';
     categories.push('Football', 'Women\'s Football', 'WNFC');
+  } else if (seriesName.includes('League One Volleyball') || seriesSlug.includes('League_One_Volleyball')) {
+    // League One Volleyball
+    sport = 'Volleyball';
+    categories.push('Volleyball', 'Women\'s Volleyball', 'LOVB');
   }
 
   return [sport, categories];
@@ -185,7 +189,7 @@ class VictoryHandler {
 
     try {
       const categoryIds = ['57']; // add 285 for WHL away feeds, but I think they are just duplicates of home feeds
-      
+
       for (let i = 0; i < categoryIds.length; i++) {
         const url = [BASE_URL, '/content/categories/', categoryIds[i]].join('');
 
