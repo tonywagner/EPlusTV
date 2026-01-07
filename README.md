@@ -145,9 +145,9 @@ Available for free
 
 Available for free
 
-#### LOVB Live
+#### LOVB
 
-Available for free
+Use Victory+ instead
 
 #### MLB.tv
 

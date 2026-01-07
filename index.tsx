@@ -26,7 +26,6 @@ import {nflHandler} from './services/nfl-handler';
 import {gothamHandler} from './services/gotham-handler';
 import {mwHandler} from './services/mw-handler';
 import {pwhlHandler} from './services/pwhl-handler';
-import {lovbHandler} from './services/lovb-handler';
 import {ballyHandler} from './services/bally-handler';
 import {wsnHandler} from './services/wsn-handler';
 import {nwslHandler} from './services/nwsl-handler';
@@ -78,7 +77,6 @@ import {ESPNPlus} from './services/providers/espn-plus/views';
 import {Gotham} from './services/providers/gotham/views';
 import {WSN} from './services/providers/wsn/views';
 import {PWHL} from './services/providers/pwhl/views';
-import {LOVB} from './services/providers/lovb/views';
 import {Bally} from './services/providers/bally/views';
 import {Nwsl} from './services/providers/nwsl/views';
 import {NHL} from './services/providers/nhl-tv/views';
@@ -141,7 +139,7 @@ const checkVersion = async () => {
 
 const schedule = async () => {
   await checkVersion();
-  
+
   console.log('=== Getting events ===');
 
   await Promise.all([
@@ -154,7 +152,6 @@ const schedule = async () => {
     mwHandler.getSchedule(),
     wsnHandler.getSchedule(),
     pwhlHandler.getSchedule(),
-    lovbHandler.getSchedule(),
     ballyHandler.getSchedule(),
     hudlHandler.getSchedule(),
     nflHandler.getSchedule(),
@@ -209,7 +206,6 @@ app.get('/', async c => {
               <Hudl />
               <KBO />
               <KSL />
-              <LOVB />
               <MlbTv />
               <MntWest />
               <NHL />
@@ -626,12 +622,12 @@ process.on('SIGTERM', shutDown);
 process.on('SIGINT', shutDown);
 
 (async () => {
-  console.log(`=== E+TV v${version} starting ===`); 
+  console.log(`=== E+TV v${version} starting ===`);
   initDirectories();
 
   await initMiscDb();
-  
-  await checkVersion(); 
+
+  await checkVersion();
 
   await Promise.all([
     espnHandler.initialize(),
@@ -650,7 +646,6 @@ process.on('SIGINT', shutDown);
     mwHandler.initialize(),
     wsnHandler.initialize(),
     pwhlHandler.initialize(),
-    lovbHandler.initialize(),
     ballyHandler.initialize(),
     hudlHandler.initialize(),
     kboHandler.initialize(),
