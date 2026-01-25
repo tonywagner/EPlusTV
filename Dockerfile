@@ -1,4 +1,4 @@
-FROM alpine:3.18.9
+FROM alpine:latest
 
 RUN mkdir -p /etc/udhcpc ; echo 'RESOLV_CONF="no"' >> /etc/udhcpc/udhcpc.conf
 
