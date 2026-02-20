@@ -545,7 +545,9 @@ class MLBHandler {
 
       await parseAirings(combinedEntries);
 
-      const bigInningsEnabled = await this.checkMlbBigInningAccess();
+      // temporarily disabled Big Inning scrape 2026-02-20
+      //const bigInningsEnabled = await this.checkMlbBigInningAccess();
+      const bigInningsEnabled = false;
 
       if (bigInningsEnabled) {
         const bigInnings = await this.getBigInnings();
