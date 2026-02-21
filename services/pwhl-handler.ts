@@ -1,11 +1,11 @@
+import axios from 'axios';
 import moment from 'moment-timezone';
-import * as cheerio from 'cheerio';
 
+import {userAgent} from './user-agent';
 import {IEntry, IProvider, TChannelPlaybackInfo} from './shared-interfaces';
 import {db} from './database';
 import {debug} from './debug';
-import {combineImages, normalTimeRange, sleep} from './shared-helpers';
-import {jsDomHelper} from './jsdom-helper';
+import {combineImages, normalTimeRange} from './shared-helpers';
 import {getEventStream, getLiveEventsFromChannel, matchEvent} from './yt-dlp-helper';
 
 const YT_CHANNEL = 'UCNKUkQV2R0JKakyE1vuC1lQ';
@@ -17,6 +17,10 @@ interface IPWHLEvent {
   start: Date;
   id: string;
 }
+
+const getLogo = (competitorId: string): string => {
+  return ['https://', 'assets', '.leaguestat', '.com', '/pwhl', '/logos', '/50x50', '/', competitorId, '.png'].join('');
+};
 
 const parseAirings = async (events: IPWHLEvent[]) => {
   const [now, endSchedule] = normalTimeRange();
@@ -84,79 +88,57 @@ class PWHLHandler {
       return;
     }
 
-    const currentDate = moment();
-    let currentYear = currentDate.year();
-
     const allItems: IPWHLEvent[] = [];
 
     console.log('Looking for PWHL events...');
 
     try {
-      const dom = await jsDomHelper('https://www.thepwhl.com/en/schedule');
+      const schedule_url = [
+        'https://',
+        'next-gen',
+        '.sports',
+        '.bellmedia',
+        '.ca',
+        '/v2',
+        '/schedule',
+        '/sports',
+        '/hockey',
+        '/leagues',
+        '/pwhl',
+        '?brand=tsn',
+        '&lang=en',
+        '&grouping=',
+        encodeURIComponent(moment().format('YYYY-MM-DD')),
+      ].join('');
 
-      let a = 0;
-      
-      var timezone_map = {
-        E: 'America/New_York',
-        C: 'America/Chicago',
-        M: 'America/Denver',
-        P: 'America/Los_Angeles',
-      };
+      const {data: schedule_data} = await axios.get(schedule_url, {
+        headers: {
+          origin: 'https://www.tsn.ca',
+          referer: 'https://www.tsn.ca/',
+          'user-agent': userAgent,
+        },
+      });
 
-      while (a < 100) {
-        const $ = cheerio.load(dom.serialize());
-        const scheduleItems = $('.ht-ids-preview');
+      for (const game_date in schedule_data) {
+        for (const game_data of schedule_data[game_date]) {
+          const awayTeam = [game_data['event']['bottom']['location'], game_data['event']['bottom']['name']].join(' ');
+          const homeTeam = [game_data['event']['top']['location'], game_data['event']['top']['name']].join(' ');
+          const start = moment.tz(game_data['event']['dateGMT'], 'GMT');
 
-        if (scheduleItems.length > 0) {
-          scheduleItems.each((i, el) => {
-            const $el = $(el);
-            const teams = $el.find('.ht-ids-team');
-            const homeTeam = teams.eq(1).find('a').attr('title').replace(' Roster', '').trim().replace(/ +/g, ' ');
-            const homeLogo = teams.eq(1).find('a').find('img').attr('src');
-            const awayTeam = teams.eq(0).find('a').attr('title').replace(' Roster', '').trim().replace(/ +/g, ' ');
-            const awayLogo = teams.eq(0).find('a').find('img').attr('src');
-            const date = $el.find('.ht-ids-date').text().trim();
-            var time = $el.find('.ht-ids-time').text().trim();
-            
-            if (time == 'TBD') return;
-            
-            var timeparts = time.split(/\s+/);
-            var timezone = timezone_map[timeparts.pop()[0]];
-            time = timeparts.join(' ');
-
-            var gameDate = moment
-              .tz(`${date} ${currentYear} ${time}`, 'ddd, MMM D YYYY h:mm A', timezone)
-              .startOf('minute');
-            if (!gameDate.isValid()) {
-              const nextYear = currentYear + 1;
-              gameDate = moment
-                .tz(`${date} ${nextYear} ${time}`, 'ddd, MMM D YYYY h:mm A', timezone)
-                .startOf('minute');
-              if (gameDate.isValid()) {
-                currentYear = nextYear;
-              } else {
-                return;
-              }
-            }
-
-            allItems.push({
-              awayLogo,
-              homeLogo,
-              id: `pwhl-${gameDate.valueOf()}`,
-              start: gameDate.toDate(),
-              title: `${homeTeam} vs ${awayTeam}`,
-            });
+          allItems.push({
+            awayLogo: getLogo(game_data['event']['bottom']['competitorId']),
+            homeLogo: getLogo(game_data['event']['top']['competitorId']),
+            id: [
+              'pwhl',
+              start.valueOf(),
+              game_data['event']['bottom']['shortName'],
+              game_data['event']['top']['shortName'],
+            ].join('-'),
+            start: start.toDate(),
+            title: `${homeTeam} vs ${awayTeam}`,
           });
-
-          a = 1000;
-          break;
         }
-
-        await sleep(100);
-        a++;
       }
-
-      dom.window.close();
 
       debug.saveRequestData(allItems, 'pwhl', 'epg');
 

@@ -1,6 +1,6 @@
 {
   "name": "eplustv",
-  "version": "4.14.12",
+  "version": "4.14.13",
   "description": "",
   "scripts": {
     "start": "ts-node -r tsconfig-paths/register index.tsx",
