@@ -25,6 +25,7 @@ import {kboHandler} from './kbo-handler';
 import {kslHandler} from './ksl-handler';
 import {zeamHandler} from './zeam-handler';
 import {nwslHandler} from './nwsl-handler';
+import {midcoHandler} from './midco-handler';
 import {outsideHandler} from './outside-handler';
 import {wnbaHandler} from './wnba-handler';
 
@@ -88,6 +89,9 @@ const startChannelStream = async (channelId: string, appUrl: string) => {
           break;
         case 'nwsl':
           [url, headers] = await nwslHandler.getEventData(appStatus.channels[channelId].current);
+          break;
+        case 'midco':
+          [url, headers] = await midcoHandler.getEventData(appStatus.channels[channelId].current);
           break;
         case 'bally':
           [url, headers] = await ballyHandler.getEventData(appStatus.channels[channelId].current);

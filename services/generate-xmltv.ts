@@ -183,7 +183,7 @@ export const generateXml = async (linear = false): Promise<xml> => {
                 lang: 'en',
               },
             },
-            entryName,
+            !entry.description ? entryName : entry.description,
           ],
         },
         {

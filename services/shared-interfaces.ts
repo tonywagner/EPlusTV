@@ -35,6 +35,7 @@ export interface IJWToken {
 
 export interface IEntry {
   categories: string[];
+  description?: string;
   duration: number;
   end: number;
   from: string;
