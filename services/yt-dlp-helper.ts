@@ -38,7 +38,7 @@ export const getLiveEventsFromChannel = async (channelId: string): Promise<ILive
 export const matchEvent = (streams: ILiveStream[], title: string): ILiveStream | undefined => {
   const [homeTeam, awayTeam] = title.split(' vs ');
 
-  return streams.find(a => a.title.indexOf(homeTeam) > -1 || a.title.indexOf(awayTeam) > -1);
+  return streams.find(a => a.title.indexOf(homeTeam.split(' ')[0]) > -1 || a.title.indexOf(awayTeam.split(' ')[0]) > -1);
 };
 
 export const getEventStream = async (videoId: string): Promise<string | undefined> => {
