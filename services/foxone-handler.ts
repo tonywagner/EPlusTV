@@ -737,6 +737,7 @@ public getStationMap = async (): Promise<typeof this.stationMap> => {
       return [
         playURL,
         {
+          'Accept-Encoding': 'gzip, deflate, br, zstd',
           'User-Agent': androidFoxOneUserAgent,
         },
       ];
@@ -792,6 +793,7 @@ public getStationMap = async (): Promise<typeof this.stationMap> => {
           },
           {
             headers: {
+              'Accept-Encoding': 'gzip, deflate, br, zstd',
               'User-Agent': androidFoxOneUserAgent,
               authorization: this.adobe_auth.accessToken,
               'x-api-key': this.appConfig.network.apikey,
