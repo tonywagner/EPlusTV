@@ -2,7 +2,7 @@
   <img src="https://i.imgur.com/FIGZdR3.png">
 </p>
 
-Current version: **4.15.6**
+Current version: **4.16.0**
 
 # About
 This takes programming from various providers and transforms it into a "live TV" experience with virtual linear channels. It will discover what is on, and generate a schedule of channels that will give you M3U and XMLTV files that you can import into something like [Jellyfin](https://jellyfin.org) or [Channels](https://getchannels.com).
@@ -41,6 +41,10 @@ Available for free
 #### B1G+
 
 Available to login with B1G+ credentials (or for free with certain ISP providers)
+
+#### BZZR
+
+Available to login with BZZR credentials
 
 #### CBS Sports
 

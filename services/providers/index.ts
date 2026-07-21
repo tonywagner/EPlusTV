@@ -25,6 +25,7 @@ import {ksl} from './ksl';
 import {zeam} from './zeam';
 import {outside} from './outside';
 import {wnba} from './wnba';
+import {bzzr} from './bzzr';
 
 export const providers = new Hono().basePath('/providers');
 
@@ -53,3 +54,4 @@ providers.route('/', ksl);
 providers.route('/', zeam);
 providers.route('/', outside);
 providers.route('/', wnba);
+providers.route('/', bzzr);

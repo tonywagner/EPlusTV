@@ -28,6 +28,7 @@ import {nwslHandler} from './nwsl-handler';
 import {midcoHandler} from './midco-handler';
 import {outsideHandler} from './outside-handler';
 import {wnbaHandler} from './wnba-handler';
+import {bzzrHandler} from './bzzr-handler';
 
 const checkingStream = {};
 
@@ -116,6 +117,10 @@ const startChannelStream = async (channelId: string, appUrl: string) => {
           break;
         case 'wnba':
           [url, headers] = await wnbaHandler.getEventData(appStatus.channels[channelId].current);
+          break;
+        case 'bzzr':
+          [url, headers] = await bzzrHandler.getEventData(appStatus.channels[channelId].current);
+          break;
         default:
           [url, headers] = await espnHandler.getEventData(appStatus.channels[channelId].current);
       }

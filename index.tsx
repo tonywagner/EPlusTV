@@ -39,6 +39,7 @@ import {kslHandler} from './services/ksl-handler';
 import {zeamHandler} from './services/zeam-handler';
 import {outsideHandler} from './services/outside-handler';
 import {wnbaHandler} from './services/wnba-handler';
+import {bzzrHandler} from './services/bzzr-handler';
 import {
   cleanEntries,
   clearChannels,
@@ -88,6 +89,7 @@ import {KSL} from './services/providers/ksl/views';
 import {Zeam} from './services/providers/zeam/views';
 import {Outside} from './services/providers/outside/views';
 import {WNBA} from './services/providers/wnba/views';
+import {BZZR} from './services/providers/bzzr/views';
 
 import {
   initMiscDb,
@@ -169,6 +171,7 @@ const schedule = async () => {
     zeamHandler.getSchedule(),
     outsideHandler.getSchedule(),
     wnbaHandler.getSchedule(),
+    bzzrHandler.getSchedule(),
   ]);
 
   console.log('=== Done getting events ===');
@@ -199,6 +202,7 @@ app.get('/', async c => {
             <Providers>
               <Bally />
               <B1G />
+              <BZZR />
               <CBSSports />
               <ESPN />
               <ESPNPlus />
@@ -668,6 +672,7 @@ process.on('SIGINT', shutDown);
     zeamHandler.initialize(),
     outsideHandler.initialize(),
     wnbaHandler.initialize(),
+    bzzrHandler.initialize(),
   ]);
 
   await Promise.all([
