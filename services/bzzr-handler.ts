@@ -349,6 +349,8 @@ bzzrConfigPath
   };
 
   public getEventData = async (eventId: string): Promise<TChannelPlaybackInfo> => {
+    await this.refreshTokens();
+
     const id = eventId.replace('bzzr-', '').replace('-pregame', '');
 
     try {
