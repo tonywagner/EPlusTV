@@ -78,16 +78,17 @@ nfl.put('/auth/:provider', async c => {
   return c.html(<Login otherAuth={provider} />);
 });
 
-nfl.get('/login/:code/:other', async c => {
+nfl.get('/login/:code/:verifier/:other', async c => {
   const code = c.req.param('code');
+  const codeVerifier = c.req.param('verifier');
   const otherAuth = c.req.param('other');
 
   const provider = otherAuth === 'undefined' ? undefined : (otherAuth as TOtherAuth);
 
-  const isAuthenticated = await nflHandler.authenticateRegCode(code, provider);
+  const isAuthenticated = await nflHandler.authenticateRegCode(code, codeVerifier, provider);
 
   if (!isAuthenticated) {
-    return c.html(<Login code={code} otherAuth={provider} />);
+    return c.html(<Login code={code} codeVerifier={codeVerifier} otherAuth={provider} />);
   }
 
   const {affectedDocuments} = await db.providers.updateAsync<IProvider<TNFLTokens>, any>(

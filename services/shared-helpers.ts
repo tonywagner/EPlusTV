@@ -1,4 +1,4 @@
-import crypto from 'crypto';
+import crypto, { BinaryToTextEncoding } from 'crypto';
 import axios from 'axios';
 import moment, {Moment} from 'moment';
 import sharp from 'sharp';
@@ -40,6 +40,29 @@ export const generateRandom = (numChars = 8, namespace?: string): string => {
 
 export const getRandomHex = (): string => crypto.randomUUID().replace(/-/g, '');
 export const getRandomUUID = (): string => crypto.randomUUID();
+export const getRandomCodeVerifier = (): string => {
+  return crypto.randomBytes(32).toString('base64url');
+};
+export const getCodeChallenge = (codeVerifier: string): string => {
+  return crypto
+    .createHash('sha256')
+    .update(codeVerifier.trim(), 'ascii')
+    .digest('base64url' as BinaryToTextEncoding);
+};
+
+export const getRandomVisitorMid = (): string => {
+  const part1 = BigInt('0x' + crypto.randomBytes(8).toString('hex'))
+    .toString()
+    .slice(0, 19)
+    .padStart(19, '1');
+
+  const part2 = BigInt('0x' + crypto.randomBytes(8).toString('hex'))
+    .toString()
+    .slice(0, 19)
+    .padStart(19, '1');
+
+  return `${part1}${part2}`;
+};
 
 export const resetSchedule = async (): Promise<void> => {
   await db.schedule.removeAsync({}, {multi: true});
@@ -161,15 +184,15 @@ export const latestRelease = async (): Promise<string> => {
       '/releases',
       '/latest',
     ].join('');
-    
+
     let headers = {}
     const last_modified = await getLastModified();
     if ( last_modified != '' ) {
       headers['If-Modified-Since'] = last_modified;
     }
-    
+
     const response = await axios.get(url, {headers});
-    
+
     if ( response ) {
       if ( response.data && response.data.tag_name ) {
         latest_version = response.data.tag_name;

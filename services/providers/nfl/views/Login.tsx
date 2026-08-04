@@ -4,14 +4,15 @@ import {nflHandler, TOtherAuth} from '@/services/nfl-handler';
 
 interface ILogin {
   code?: string;
+  codeVerifier?: string;
   otherAuth?: TOtherAuth;
 }
 
-export const Login: FC<ILogin> = async ({code, otherAuth}) => {
+export const Login: FC<ILogin> = async ({code, codeVerifier, otherAuth}) => {
   let shownCode = code;
 
   if (!shownCode) {
-    [shownCode] = await nflHandler.getAuthCode(otherAuth);
+    [shownCode, codeVerifier] = await nflHandler.getAuthCode(otherAuth);
   }
 
   const otherAuthName =
@@ -30,7 +31,7 @@ export const Login: FC<ILogin> = async ({code, otherAuth}) => {
       hx-target="this"
       hx-swap="outerHTML"
       hx-trigger="every 5s"
-      hx-get={`/providers/nfl/login/${shownCode}/${otherAuth}`}
+      hx-get={`/providers/nfl/login/${shownCode}/${codeVerifier}/${otherAuth}`}
     >
       <div class="grid-container">
         <div>

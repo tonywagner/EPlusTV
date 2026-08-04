@@ -10,7 +10,7 @@ import {configPath} from './config';
 import {useNfl} from './networks';
 import {ClassTypeWithoutMethods, IEntry, IProvider, TChannelPlaybackInfo} from './shared-interfaces';
 import {db} from './database';
-import {getRandomUUID, normalTimeRange} from './shared-helpers';
+import {getRandomHex, getRandomUUID, getRandomCodeVerifier, getCodeChallenge, getRandomVisitorMid, normalTimeRange} from './shared-helpers';
 import {debug} from './debug';
 import {usesLinear} from './misc-db-service';
 
@@ -118,6 +118,41 @@ const TV_CLIENT_KEY = [
 const CLIENT_SECRET = ['q', 'G', 'h', 'E', 'v', '1', 'R', 't', 'I', '2', 'S', 'f', 'R', 'Q', 'O', 'e'].join('');
 
 const TV_CLIENT_SECRET = ['u', 'o', 'C', 'y', 'y', 'k', 'y', 'U', 'w', 'D', 'b', 'f', 'Q', 'Z', 'r', '2'].join('');
+
+const CLIENT_ID = [
+  'm',
+  'I',
+  'l',
+  'i',
+  'x',
+  '3',
+  'X',
+  'Y',
+  'R',
+  'O',
+  'B',
+  'f',
+  'T',
+  'k',
+  '1',
+  'z',
+  '8',
+  '3',
+  'p',
+  'c',
+  'q',
+  'P',
+  'I',
+  'R',
+  'z',
+  'h',
+  'Y',
+  'Y',
+  'K',
+  'H',
+  'k',
+  '2',
+].join('');
 
 const DEVICE_INFO = {
   capabilities: {},
@@ -233,6 +268,7 @@ class NflHandler {
   public expires_at?: number;
   public device_id?: string;
   public device_info?: string;
+  public oidc_access_token?: string;
   public uid?: string;
   public tv_access_token?: string;
   public tv_refresh_token?: string;
@@ -265,6 +301,7 @@ class NflHandler {
         data.tv_access_token = this.tv_access_token;
         data.tv_expires_at = this.tv_expires_at;
         data.tv_refresh_token = this.tv_refresh_token;
+        data.oidc_access_token = this.oidc_access_token;
         data.uid = this.uid;
         data.mvpdIdp = this.mvpdIdp;
         data.mvpdUserId = this.mvpdUserId;
@@ -347,7 +384,9 @@ class NflHandler {
       return;
     }
 
-    await this.extendTokens();
+    if (!this.expires_at || moment(this.expires_at).isBefore(moment().add(2, 'hours'))) {
+      await this.extendTokens();
+    }
   };
 
   public getSchedule = async (): Promise<void> => {
@@ -608,7 +647,7 @@ class NflHandler {
     await this.extendTvToken();
   };
 
-  private extendToken = async (uidSignature?: string, signatureTimestamp?: string): Promise<void> => {
+  private extendToken = async (): Promise<void> => {
     try {
       const url = ['https://', 'api.nfl.com', '/identity/v3/token/refresh'].join('');
 
@@ -621,10 +660,9 @@ class NflHandler {
           deviceInfo: Buffer.from(JSON.stringify(DEVICE_INFO), 'utf-8').toString('base64'),
           networkType: 'wifi',
           refreshToken: this.refresh_token,
-          uid: this.uid,
-          ...(uidSignature && {
-            signatureTimestamp,
-            uidSignature,
+          ...(this.oidc_access_token && {
+            oidcAccessToken: this.oidc_access_token,
+            uid: this.uid,
           }),
           ...(this.mvpdIdp && {
             mvpdIdp: this.mvpdIdp,
@@ -675,7 +713,7 @@ class NflHandler {
     }
   };
 
-  private extendTvToken = async (uidSignature?: string, signatureTimestamp?: string): Promise<void> => {
+  private extendTvToken = async (): Promise<void> => {
     try {
       const url = ['https://', 'api.nfl.com', '/identity/v3/token/refresh'].join('');
 
@@ -688,10 +726,9 @@ class NflHandler {
           deviceInfo: Buffer.from(JSON.stringify(TV_DEVICE_INFO), 'utf-8').toString('base64'),
           networkType: 'wifi',
           refreshToken: this.tv_refresh_token,
-          uid: this.uid,
-          ...(uidSignature && {
-            signatureTimestamp,
-            uidSignature,
+          ...(this.oidc_access_token && {
+            oidcAccessToken: this.oidc_access_token,
+            uid: this.uid,
           }),
           ...(this.mvpdIdp && {
             mvpdIdp: this.mvpdIdp,
@@ -792,7 +829,7 @@ class NflHandler {
     }
   };
 
-  public getAuthCode = async (otherAuth?: TOtherAuth): Promise<[string, string?]> => {
+  public getAuthCode = async (otherAuth?: TOtherAuth): Promise<[string, string, string?]> => {
     // Reset state
     if (!otherAuth) {
       this.device_id = getRandomUUID();
@@ -802,6 +839,7 @@ class NflHandler {
       this.tv_access_token = undefined;
       this.tv_expires_at = undefined;
       this.tv_refresh_token = undefined;
+      this.oidc_access_token = undefined;
       this.uid = undefined;
       this.mvpdIdp = undefined;
       this.mvpdUserId = undefined;
@@ -828,6 +866,14 @@ class NflHandler {
 
       const code = data.regCode;
 
+      const codeVerifier = getRandomCodeVerifier();
+
+      const issued_at = Date.now();
+
+      const nonce = getRandomHex();
+
+      const visitorMid = getRandomVisitorMid();
+
       const putUrl = ['https://', 'api.nfl.com', '/keystore/v1/mvpd/', code, '?ttl=600000'].join('');
 
       await axios.put(
@@ -835,28 +881,39 @@ class NflHandler {
         {
           ctvDevice: 'AndroidTV',
           deviceId: this.device_id,
-          expiresIn: 600,
-          platform: 'ctv',
-          regCode: code,
+          visitorMid: visitorMid,
           ...(!otherAuth && {
-            nflAccount: true,
-            nflToken: true,
+            client_id: CLIENT_ID,
+            code_challenge: getCodeChallenge(codeVerifier),
+            code_challenge_method: 'S256',
+            flow: 'oidc_pkce_v1',
+            issued_at: issued_at,
+            nonce: nonce,
+            platform: 'androidtv',
+            redirect_uri: 'https://id.nfl.com/account/activate',
+            regCode: code,
+            scope: 'openid profile email nfl_complete',
+            ttl_sec: 600,
           }),
           ...(otherAuth === 'tve' && {
             idp: 'TV_PROVIDER',
             nflAccount: false,
+            platform: 'ctv',
           }),
           ...(otherAuth === 'prime' && {
             idp: 'AMAZON',
             nflAccount: false,
+            platform: 'ctv',
           }),
           ...(otherAuth === 'peacock' && {
             idp: 'PEACOCK',
             nflAccount: false,
+            platform: 'ctv',
           }),
           ...(otherAuth === 'sunday_ticket' && {
             idp: 'YOUTUBE',
             nflAccount: false,
+            platform: 'ctv',
           }),
         },
         {
@@ -868,19 +925,20 @@ class NflHandler {
         },
       );
 
-      return [code, otherAuth];
+      return [code, codeVerifier, otherAuth];
     } catch (e) {
       console.error(e);
       console.log('Could not start the authentication process for NFL!');
     }
   };
 
-  public authenticateRegCode = async (code: string, otherAuth?: TOtherAuth): Promise<boolean> => {
+  public authenticateRegCode = async (code: string, codeVerifier: string, otherAuth?: TOtherAuth): Promise<boolean> => {
     try {
       const url = ['https://', 'api.nfl.com', '/keystore/v1/mvpd/', code].join('');
 
       const {data} = await axios.get(url, {
         headers: {
+          Accept: 'application/json, text/plain, */*',
           Authorization: `Bearer ${this.access_token}`,
           'User-Agent': okHttpUserAgent,
         },
@@ -915,18 +973,80 @@ class NflHandler {
         await this.extendToken();
         await this.extendTvToken();
       } else {
-        if (!data.uidSignature) {
+
+        if (!data.auth_code) {
           return false;
         }
 
-        this.uid = data.uid;
+        const postUrl = ['https://', 'api.nfl.com/', 'accounts/v1/auth/oidc/token'].join('');
 
-        await this.extendToken(data.uidSignature, data.signatureTimestamp);
-        await this.extendTvToken(data.uidSignature, data.signatureTimestamp);
+        const payload = new URLSearchParams({
+          client_id: CLIENT_ID,
+          code: data.auth_code,
+          code_verifier: codeVerifier,
+          grant_type: 'authorization_code',
+          redirect_uri: 'https://id.nfl.com/account/activate',
+          scope: 'openid profile email nfl_complete',
+        });
+
+        const {data: postData} = await axios.post(
+          postUrl,
+          payload,
+          {
+            headers: {
+              'Accept-Encoding': 'gzip',
+              Authorization: `Bearer ${data.auth_code}`,
+              'Content-Type': 'application/x-www-form-urlencoded',
+              'User-Agent': okHttpUserAgent,
+            },
+          },
+        );
+
+        if (!postData) {
+          return false;
+        }
+
+        if (!postData.access_token) {
+          return false;
+        }
+
+        this.oidc_access_token = postData.access_token;
+
+
+        const userInfoPayload = new URLSearchParams({
+          code: this.oidc_access_token,
+        });
+
+        const {data: userInfo} = await axios.post(
+          ['https://', 'api.nfl.com', '/accounts/v1/auth/oidc/userinfo'].join(''),
+          userInfoPayload,
+          {
+            headers: {
+              'Accept-Encoding': 'gzip',
+              Authorization: `Bearer ${this.oidc_access_token}`,
+              'Content-Type': 'application/x-www-form-urlencoded',
+              'User-Agent': okHttpUserAgent,
+            },
+          },
+        );
+
+        if (!userInfo) {
+          return false;
+        }
+
+        if (!userInfo.sub) {
+          return false;
+        }
+
+        this.uid = userInfo.sub;
+
+        await this.extendToken();
+        await this.extendTvToken();
       }
 
       return true;
     } catch (e) {
+      console.error(e);
       return false;
     }
   };
@@ -942,6 +1062,7 @@ class NflHandler {
       access_token,
       expires_at,
       refresh_token,
+      oidc_access_token,
       uid,
       tv_access_token,
       tv_expires_at,
@@ -964,6 +1085,7 @@ class NflHandler {
     this.tv_access_token = tv_access_token;
     this.tv_expires_at = tv_expires_at;
     this.tv_refresh_token = tv_refresh_token;
+    this.oidc_access_token = oidc_access_token;
     this.uid = uid;
 
     // Supplemental Auth
@@ -985,6 +1107,7 @@ class NflHandler {
         access_token,
         expires_at,
         refresh_token,
+        oidc_access_token,
         uid,
         tv_access_token,
         tv_expires_at,
@@ -1007,6 +1130,7 @@ class NflHandler {
       this.tv_access_token = tv_access_token;
       this.tv_expires_at = tv_expires_at;
       this.tv_refresh_token = tv_refresh_token;
+      this.oidc_access_token = oidc_access_token;
       this.uid = uid;
 
       // Supplemental Auth
