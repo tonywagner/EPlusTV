@@ -437,9 +437,9 @@ class NflHandler {
 
       data.data.items.forEach(i => {
         if (moment(i.startTime).isBefore(endSchedule)) {
-          const isEnglish = Boolean(i.language?.find(l => l === 'en'));
-          const isInMarket = Boolean(i.dmaCodes?.find(dc => dc === `${dmaCode}`));
-          const hasNflPlusAuth = Boolean(i.authorizations?.nfl_plus || i.authorizations?.nfl_plus_premium);
+          const isEnglish = i.language.find(l => l === 'en');
+          const isInMarket = i.dmaCodes.find(dc => dc === `${dmaCode}`);
+          const hasNflPlusAuth = Boolean(i.authorizations.nfl_plus || i.authorizations.nfl_plus_premium);
           // NFL+ preseason games are authorized nationally (local blackouts enforced at
           // playback) and often have empty or non-matching dmaCodes, so DMA gating misses them.
           const isNflPlusPreseason = hasPlus && hasNflPlusAuth && i.nflSeasonType === 'PRE';
