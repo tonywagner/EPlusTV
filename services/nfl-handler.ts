@@ -51,6 +51,8 @@ interface INFLEvent {
   broadcastAiringType?: string;
   hostNetwork?: string;
   nflSeasonType?: string;
+  homeTeamId?: string;
+  awayTeamId?: string;
 }
 
 const CLIENT_KEY = [
@@ -208,6 +210,7 @@ export type TOtherAuth = 'prime' | 'tve' | 'peacock' | 'sunday_ticket';
 
 interface INFLJwt {
   dmaCode: string;
+  hmaTeams?: string[];
   plans: {plan: string; status: string; expirationDate: string}[];
   networks?: {[key: string]: string};
 }
@@ -406,7 +409,7 @@ class NflHandler {
 
     const useLinear = await usesLinear();
 
-    const {dmaCode}: INFLJwt = jwt_decode(this.access_token);
+    const {dmaCode, hmaTeams = []}: INFLJwt = jwt_decode(this.access_token);
 
     const redZoneAccess = await this.checkRedZoneAccess();
     const nflNetworkAccess = await this.checkNetworkAccess();
@@ -442,7 +445,11 @@ class NflHandler {
           const hasNflPlusAuth = Boolean(i.authorizations?.nfl_plus || i.authorizations?.nfl_plus_premium);
           // NFL+ preseason games are authorized nationally (local blackouts enforced at
           // playback) and often have empty or non-matching dmaCodes, so DMA gating misses them.
-          const isNflPlusPreseason = hasPlus && hasNflPlusAuth && i.nflSeasonType === 'PRE';
+          // Instead, we'll filter out home-market games by checking the home and away team IDs against the hmaTeams list.
+          const isHomeMarketGame =
+            hmaTeams.length > 0 &&
+            ((i.homeTeamId && hmaTeams.includes(i.homeTeamId)) || (i.awayTeamId && hmaTeams.includes(i.awayTeamId)));
+          const isNflPlusPreseason = hasPlus && hasNflPlusAuth && i.nflSeasonType === 'PRE' && !isHomeMarketGame;
 
           if (i.contentType === 'GAME' && isEnglish) {
             if (
