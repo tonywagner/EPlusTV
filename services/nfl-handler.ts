@@ -10,7 +10,14 @@ import {configPath} from './config';
 import {useNfl} from './networks';
 import {ClassTypeWithoutMethods, IEntry, IProvider, TChannelPlaybackInfo} from './shared-interfaces';
 import {db} from './database';
-import {getRandomHex, getRandomUUID, getRandomCodeVerifier, getCodeChallenge, getRandomVisitorMid, normalTimeRange} from './shared-helpers';
+import {
+  getRandomHex,
+  getRandomUUID,
+  getRandomCodeVerifier,
+  getCodeChallenge,
+  getRandomVisitorMid,
+  normalTimeRange,
+} from './shared-helpers';
 import {debug} from './debug';
 import {usesLinear} from './misc-db-service';
 
@@ -43,6 +50,9 @@ interface INFLEvent {
   networks: string[];
   broadcastAiringType?: string;
   hostNetwork?: string;
+  nflSeasonType?: string;
+  homeTeamId?: string;
+  awayTeamId?: string;
 }
 
 const CLIENT_KEY = [
@@ -200,6 +210,7 @@ export type TOtherAuth = 'prime' | 'tve' | 'peacock' | 'sunday_ticket';
 
 interface INFLJwt {
   dmaCode: string;
+  hmaTeams?: string[];
   plans: {plan: string; status: string; expirationDate: string}[];
   networks?: {[key: string]: string};
 }
@@ -398,7 +409,7 @@ class NflHandler {
 
     const useLinear = await usesLinear();
 
-    const {dmaCode}: INFLJwt = jwt_decode(this.access_token);
+    const {dmaCode, hmaTeams = []}: INFLJwt = jwt_decode(this.access_token);
 
     const redZoneAccess = await this.checkRedZoneAccess();
     const nflNetworkAccess = await this.checkNetworkAccess();
@@ -429,20 +440,29 @@ class NflHandler {
 
       data.data.items.forEach(i => {
         if (moment(i.startTime).isBefore(endSchedule)) {
-          if (
-            i.contentType === 'GAME' &&
-            i.dmaCodes.find(dc => dc === `${dmaCode}`) &&
-            i.language.find(l => l === 'en')
-          ) {
+          const isEnglish = Boolean(i.language?.find(l => l === 'en'));
+          const isInMarket = Boolean(i.dmaCodes?.find(dc => dc === `${dmaCode}`));
+          const hasNflPlusAuth = Boolean(i.authorizations?.nfl_plus || i.authorizations?.nfl_plus_premium);
+          // NFL+ preseason games are authorized nationally (local blackouts enforced at
+          // playback) and often have empty or non-matching dmaCodes, so DMA gating misses them.
+          // Instead, we'll filter out home-market games by checking the home and away team IDs against the hmaTeams list.
+          const isHomeMarketGame =
+            hmaTeams.length > 0 &&
+            ((i.homeTeamId && hmaTeams.includes(i.homeTeamId)) || (i.awayTeamId && hmaTeams.includes(i.awayTeamId)));
+          const isNflPlusPreseason = hasPlus && hasNflPlusAuth && i.nflSeasonType === 'PRE' && !isHomeMarketGame;
+
+          if (i.contentType === 'GAME' && isEnglish) {
             if (
-              // If you have NFL+, you get the game
-              hasPlus ||
-              // TVE
-              this.checkTVEEventAccess(i) ||
-              // Peacock
-              (i.authorizations.peacock && this.checkPeacockAccess()) ||
-              // Prime
-              (i.authorizations.amazon_prime && this.checkPrimeAccess())
+              isNflPlusPreseason ||
+              (isInMarket &&
+                // If you have NFL+, you get the game
+                (hasPlus ||
+                  // TVE
+                  this.checkTVEEventAccess(i) ||
+                  // Peacock
+                  (i.authorizations.peacock && this.checkPeacockAccess()) ||
+                  // Prime
+                  (i.authorizations.amazon_prime && this.checkPrimeAccess())))
             ) {
               events.push(i);
             }
@@ -458,7 +478,7 @@ class NflHandler {
           } else if (
             // Sunday Ticket
             i.contentType === 'GAME' &&
-            i.language.find(l => l === 'en') &&
+            isEnglish &&
             i.authorizations.sunday_ticket &&
             this.checkSundayTicketAccess()
           ) {
@@ -881,14 +901,14 @@ class NflHandler {
         {
           ctvDevice: 'AndroidTV',
           deviceId: this.device_id,
-          visitorMid: visitorMid,
+          visitorMid,
           ...(!otherAuth && {
             client_id: CLIENT_ID,
             code_challenge: getCodeChallenge(codeVerifier),
             code_challenge_method: 'S256',
             flow: 'oidc_pkce_v1',
-            issued_at: issued_at,
-            nonce: nonce,
+            issued_at,
+            nonce,
             platform: 'androidtv',
             redirect_uri: 'https://id.nfl.com/account/activate',
             regCode: code,
@@ -973,7 +993,6 @@ class NflHandler {
         await this.extendToken();
         await this.extendTvToken();
       } else {
-
         if (!data.auth_code) {
           return false;
         }
@@ -989,18 +1008,14 @@ class NflHandler {
           scope: 'openid profile email nfl_complete',
         });
 
-        const {data: postData} = await axios.post(
-          postUrl,
-          payload,
-          {
-            headers: {
-              'Accept-Encoding': 'gzip',
-              Authorization: `Bearer ${data.auth_code}`,
-              'Content-Type': 'application/x-www-form-urlencoded',
-              'User-Agent': okHttpUserAgent,
-            },
+        const {data: postData} = await axios.post(postUrl, payload, {
+          headers: {
+            'Accept-Encoding': 'gzip',
+            Authorization: `Bearer ${data.auth_code}`,
+            'Content-Type': 'application/x-www-form-urlencoded',
+            'User-Agent': okHttpUserAgent,
           },
-        );
+        });
 
         if (!postData) {
           return false;
@@ -1011,7 +1026,6 @@ class NflHandler {
         }
 
         this.oidc_access_token = postData.access_token;
-
 
         const userInfoPayload = new URLSearchParams({
           code: this.oidc_access_token,
