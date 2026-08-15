@@ -15,7 +15,6 @@ import {initDirectories} from './services/init-directories';
 import {generateXml} from './services/generate-xmltv';
 import {launchChannel} from './services/launch-channel';
 import {scheduleEntries} from './services/build-schedule';
-import {espnHandler} from './services/espn-handler';
 import {foxHandler} from './services/fox-handler';
 import {foxOneHandler} from './services/foxone-handler';
 import {mlbHandler} from './services/mlb-handler';
@@ -23,7 +22,6 @@ import {b1gHandler} from './services/b1g-handler';
 import {floSportsHandler} from './services/flo-handler';
 import {paramountHandler} from './services/paramount-handler';
 import {nflHandler} from './services/nfl-handler';
-import {gothamHandler} from './services/gotham-handler';
 import {mwHandler} from './services/mw-handler';
 import {pwhlHandler} from './services/pwhl-handler';
 import {ballyHandler} from './services/bally-handler';
@@ -38,7 +36,6 @@ import {kboHandler} from './services/kbo-handler';
 import {kslHandler} from './services/ksl-handler';
 import {zeamHandler} from './services/zeam-handler';
 import {outsideHandler} from './services/outside-handler';
-import {wnbaHandler} from './services/wnba-handler';
 import {bzzrHandler} from './services/bzzr-handler';
 import {
   cleanEntries,
@@ -74,9 +71,6 @@ import {FoxSports} from './services/providers/fox/views';
 import {FoxOne} from './services/providers/foxone/views';
 import {B1G} from './services/providers/b1g/views';
 import {NFL} from './services/providers/nfl/views';
-import {ESPN} from './services/providers/espn/views';
-import {ESPNPlus} from './services/providers/espn-plus/views';
-import {Gotham} from './services/providers/gotham/views';
 import {WSN} from './services/providers/wsn/views';
 import {PWHL} from './services/providers/pwhl/views';
 import {Bally} from './services/providers/bally/views';
@@ -88,7 +82,6 @@ import {KBO} from './services/providers/kbo/views';
 import {KSL} from './services/providers/ksl/views';
 import {Zeam} from './services/providers/zeam/views';
 import {Outside} from './services/providers/outside/views';
-import {WNBA} from './services/providers/wnba/views';
 import {BZZR} from './services/providers/bzzr/views';
 
 import {
@@ -147,7 +140,6 @@ const schedule = async () => {
   console.log('=== Getting events ===');
 
   await Promise.all([
-    espnHandler.getSchedule(),
     foxHandler.getSchedule(),
     foxOneHandler.getSchedule(),
     mlbHandler.getSchedule(),
@@ -162,7 +154,6 @@ const schedule = async () => {
     nwslHandler.getSchedule(),
     midcoHandler.getSchedule(),
     paramountHandler.getSchedule(),
-    gothamHandler.getSchedule(),
     cbsHandler.getSchedule(),
     nhlHandler.getSchedule(),
     victoryHandler.getSchedule(),
@@ -170,7 +161,6 @@ const schedule = async () => {
     kslHandler.getSchedule(),
     zeamHandler.getSchedule(),
     outsideHandler.getSchedule(),
-    wnbaHandler.getSchedule(),
     bzzrHandler.getSchedule(),
   ]);
 
@@ -204,12 +194,9 @@ app.get('/', async c => {
               <B1G />
               <BZZR />
               <CBSSports />
-              <ESPN />
-              <ESPNPlus />
               <FloSports />
               <FoxOne />
               <FoxSports />
-              <Gotham />
               <Hudl />
               <KBO />
               <KSL />
@@ -223,7 +210,6 @@ app.get('/', async c => {
               <Paramount />
               <PWHL />
               <Victory />
-              <WNBA />
               <WSN />
               <Zeam />
             </Providers>
@@ -648,7 +634,6 @@ process.on('SIGINT', shutDown);
   await checkVersion();
 
   await Promise.all([
-    espnHandler.initialize(),
     foxHandler.initialize(),
     foxOneHandler.initialize(),
     mlbHandler.initialize(),
@@ -658,7 +643,6 @@ process.on('SIGINT', shutDown);
     nwslHandler.initialize(),
     midcoHandler.initialize(),
     paramountHandler.initialize(),
-    gothamHandler.initialize(),
     cbsHandler.initialize(),
     victoryHandler.initialize(),
     nhlHandler.initialize(),
@@ -671,12 +655,10 @@ process.on('SIGINT', shutDown);
     kslHandler.initialize(),
     zeamHandler.initialize(),
     outsideHandler.initialize(),
-    wnbaHandler.initialize(),
     bzzrHandler.initialize(),
   ]);
 
   await Promise.all([
-    espnHandler.refreshTokens(),
     foxHandler.refreshTokens(),
     foxOneHandler.refreshTokens(),
     mlbHandler.refreshTokens(),
@@ -685,11 +667,9 @@ process.on('SIGINT', shutDown);
     nflHandler.refreshTokens(),
     nwslHandler.refreshTokens(),
     paramountHandler.refreshTokens(),
-    gothamHandler.refreshTokens(),
     cbsHandler.refreshTokens(),
     victoryHandler.refreshTokens(),
     nhlHandler.refreshTokens(),
-    wnbaHandler.refreshTokens(),
   ]);
 
   if (sslCertificatePath && sslPrivateKeyPath) {
@@ -732,7 +712,6 @@ setInterval(async () => {
 setInterval(
   () =>
     Promise.all([
-      espnHandler.refreshTokens(),
       foxHandler.refreshTokens(),
       foxOneHandler.refreshTokens(),
       mlbHandler.refreshTokens(),
@@ -741,11 +720,9 @@ setInterval(
       nflHandler.refreshTokens(),
       nwslHandler.refreshTokens(),
       paramountHandler.refreshTokens(),
-      gothamHandler.refreshTokens(),
       cbsHandler.refreshTokens(),
       victoryHandler.refreshTokens(),
       nhlHandler.refreshTokens(),
-      wnbaHandler.refreshTokens(),
     ]),
   1000 * 60 * 30,
 );

@@ -1,5 +1,4 @@
 import {db} from './database';
-import {espnHandler} from './espn-handler';
 import {foxHandler} from './fox-handler';
 import {foxOneHandler} from './foxone-handler';
 import {mlbHandler} from './mlb-handler';
@@ -15,7 +14,6 @@ import {PlaylistHandler} from './playlist-handler';
 import {appStatus} from './app-status';
 import {removeChannelStatus} from './shared-helpers';
 import {calculateChannelNumber} from './channels';
-import {gothamHandler} from './gotham-handler';
 import {wsnHandler} from './wsn-handler';
 import {pwhlHandler} from './pwhl-handler';
 import {ballyHandler} from './bally-handler';
@@ -27,7 +25,6 @@ import {zeamHandler} from './zeam-handler';
 import {nwslHandler} from './nwsl-handler';
 import {midcoHandler} from './midco-handler';
 import {outsideHandler} from './outside-handler';
-import {wnbaHandler} from './wnba-handler';
 import {bzzrHandler} from './bzzr-handler';
 
 const checkingStream = {};
@@ -60,9 +57,6 @@ const startChannelStream = async (channelId: string, appUrl: string) => {
           break;
         case 'paramount+':
           [url, headers] = await paramountHandler.getEventData(appStatus.channels[channelId].current);
-          break;
-        case 'gotham':
-          [url, headers] = await gothamHandler.getEventData(appStatus.channels[channelId].current);
           break;
         case 'b1g+':
           [url, headers] = await b1gHandler.getEventData(appStatus.channels[channelId].current);
@@ -115,14 +109,9 @@ const startChannelStream = async (channelId: string, appUrl: string) => {
         case 'outside':
           [url, headers] = await outsideHandler.getEventData(appStatus.channels[channelId].current);
           break;
-        case 'wnba':
-          [url, headers] = await wnbaHandler.getEventData(appStatus.channels[channelId].current);
-          break;
         case 'bzzr':
           [url, headers] = await bzzrHandler.getEventData(appStatus.channels[channelId].current);
           break;
-        default:
-          [url, headers] = await espnHandler.getEventData(appStatus.channels[channelId].current);
       }
     } catch (e) {}
 

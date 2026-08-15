@@ -4,7 +4,6 @@ import {foxOneHandler} from './foxone-handler';
 import {db} from './database';
 import {IProvider} from './shared-interfaces';
 import {getLinearStartChannel, usesLinear} from './misc-db-service';
-import {gothamHandler} from './gotham-handler';
 
 async function startApp() {
   await foxOneHandler.initialize(); // Ensures stationMap is populated
@@ -46,68 +45,6 @@ export const CHANNELS = {
   // eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types
   get MAP() {
     return {
-      0: {
-        checkChannelEnabled: () => checkChannelEnabled('espn', 'espn1'),
-        id: 'espn1',
-        logo: 'https://tmsimg.fancybits.co/assets/s32645_h3_aa.png?w=360&h=270',
-        name: 'ESPN',
-        stationId: '32645',
-        tvgName: 'ESPNHD',
-        provider: 'espn',
-      },
-      1: {
-        checkChannelEnabled: () => checkChannelEnabled('espn', 'espn2'),
-        id: 'espn2',
-        logo: 'https://tmsimg.fancybits.co/assets/s45507_ll_h15_aa.png?w=360&h=270',
-        name: 'ESPN2',
-        stationId: '45507',
-        tvgName: 'ESPN2HD',
-        provider: 'espn',
-      },
-      2: {
-        checkChannelEnabled: () => checkChannelEnabled('espn', 'espnu'),
-        id: 'espnu',
-        logo: 'https://tmsimg.fancybits.co/assets/s60696_ll_h15_aa.png?w=360&h=270',
-        name: 'ESPNU',
-        stationId: '60696',
-        tvgName: 'ESPNUHD',
-        provider: 'espn',
-      },
-      3: {
-        checkChannelEnabled: () => checkChannelEnabled('espn', 'sec'),
-        id: 'sec',
-        logo: 'https://tmsimg.fancybits.co/assets/s89714_ll_h15_aa.png?w=360&h=270',
-        name: 'SEC Network',
-        stationId: '89714',
-        tvgName: 'SECH',
-        provider: 'espn',
-      },
-      4: {
-        checkChannelEnabled: () => checkChannelEnabled('espn', 'acc'),
-        id: 'acc',
-        logo: 'https://tmsimg.fancybits.co/assets/s111871_ll_h15_ac.png?w=360&h=270',
-        name: 'ACC Network',
-        stationId: '111871',
-        tvgName: 'ACC',
-        provider: 'espn',
-      },
-      5: {
-        checkChannelEnabled: () => checkChannelEnabled('espn', 'espnews'),
-        id: 'espnews',
-        logo: 'https://tmsimg.fancybits.co/assets/s59976_ll_h15_aa.png?w=360&h=270',
-        name: 'ESPNews',
-        stationId: '59976',
-        tvgName: 'ESPNWHD',
-        provider: 'espn',
-      },
-      6: {
-        checkChannelEnabled: () => checkChannelEnabled('espn', 'espndeportes'),
-        id: 'espndeportes',
-        logo: 'https://tmsimg.fancybits.co/assets/s71914_ll_h15_aa.png?w=360&h=270',
-        name: 'ESPN Deportes',
-        stationId: '71914',
-        tvgName: 'ESPNDHD',
-      },
       10: {
         checkChannelEnabled: () => checkChannelEnabled('foxsports', 'fs1'),
         id: 'fs1',
@@ -234,7 +171,6 @@ export const CHANNELS = {
         tvgName: 'SNLA',
         provider: 'mlbtv',
       },
-      ...gothamHandler.getLinearChannels(),
       70: {
         checkChannelEnabled: async (): Promise<boolean> =>
           (await db.providers.findOneAsync<IProvider>({name: 'wsn'}))?.enabled,
@@ -353,7 +289,7 @@ export const CHANNELS = {
         stationId: '72189',
         tvgName: 'FXDEPHD',
         provider: 'foxone',
-      }, 
+      },
         116: {
         checkChannelEnabled: () => checkChannelEnabled('foxone', 'FOX News'),
         id: 'FOX News',
@@ -387,7 +323,7 @@ export const CHANNELS = {
         logo: 'https://tmsimg.fancybits.co/assets/GNLZZGG0027SNRC.png?w=360&h=270',
         name: 'Masked Singer',
         provider: 'foxone',
-      }, 
+      },
       120: {
         checkChannelEnabled: () => checkChannelEnabled('foxone', 'FOX Soul'),
         id: 'FOX Soul',
@@ -414,7 +350,7 @@ export const CHANNELS = {
         stationId: '119219',
         tvgName: 'LIVENOW',
         provider: 'foxone',
-      },                     
+      },
     };
   },
 };

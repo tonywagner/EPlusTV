@@ -153,8 +153,8 @@ export const initMiscDb = async (): Promise<void> => {
   }
 
   // force disabling of removed providers and their schedules
-  const removedProviders = ['nesn', 'nsic', 'lovb'];
-  const removedSchedules = ['nesn', 'northern-sun', 'lovb'];
+  const removedProviders = ['nesn', 'nsic', 'lovb', 'espn', 'espnplus', 'gotham', 'wbna'];
+  const removedSchedules = ['nesn', 'northern-sun', 'lovb', 'espn', 'gotham', 'wbna'];
   for (var i=0; i<removedProviders.length; i++) {
     try {
       const {enabled} = await db.providers.findOneAsync<IProvider>({name: removedProviders[i]});

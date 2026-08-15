@@ -2,14 +2,14 @@
   <img src="https://i.imgur.com/FIGZdR3.png">
 </p>
 
-Current version: **4.16.2**
+Current version: **4.16.3**
 
 # About
 This takes programming from various providers and transforms it into a "live TV" experience with virtual linear channels. It will discover what is on, and generate a schedule of channels that will give you M3U and XMLTV files that you can import into something like [Jellyfin](https://jellyfin.org) or [Channels](https://getchannels.com).
 
 ## Notes
 * This was not made for pirating streams. This is made for using your own credentials and have a different presentation than the streaming apps currently provide.
-* The Mouse might not like it and it could be taken down at any minute. Enjoy it while it lasts. ¯\\_(ツ)_/¯
+* Providers might not like it and it could be taken down at any minute. Enjoy it while it lasts. ¯\\_(ツ)_/¯
 
 # Using
 The server exposes 4 main endpoints:
@@ -49,33 +49,6 @@ Available to login with BZZR credentials
 #### CBS Sports
 
 Available to login with TV Provider. Please note that there is no token refresh option here. It will require re-authenticating every 30 days.
-
-#### ESPN
-
-Limited free content. Also available to login with TV Provider
-
-##### Linear Channels
-
-Will create dedicated linear channels if using dedicated linear channels, otherwise will schedule events normally
-
-| Network Name | Description |
-|---|---|
-| ESPN | Set if your TV provider supports it |
-| ESPN2 | Set if your TV provider supports it |
-| ESPNU | Set if your TV provider supports it |
-| SEC Network | Set if your TV provider supports it |
-| ACC Network | Set if your TV provider supports it |
-| ESPNews | Set if your TV provider supports it |
-| ESPN Deportes | Set if your TV provider supports it |
-
-#### ESPN Account
-
-Formerly ESPN+. Still available to login with ESPN credentials, but does not provide access to events anymore.
-
-##### Extras
-| Name | Description |
-|---|---|
-| ESPN+ PPV | Schedule ESPN+ PPV events |
 
 #### FloSports
 
@@ -120,10 +93,6 @@ Some events are on linear channels and some aren't. If you use dedicated linear 
 | B1G Network | Set if your TV provider supports it |
 | FOX Soccer Plus | Set if your TV provider supports it |
 | FOX Deportes | Set if your TV provider supports it |
-
-#### Gotham Sports
-
-Available to login with Gotham Sports or TV Provider
 
 ##### Linear Channels
 
@@ -246,10 +215,6 @@ Available for free
 #### Victory+
 
 Available to login with Victory+ credentials.
-
-#### WNBA League Pass
-
-Available to login with WNBA League Pass credentials
 
 #### Women's Sports Network
 
