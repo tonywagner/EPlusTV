@@ -454,6 +454,8 @@ class NflHandler {
           if (i.contentType === 'GAME' && isEnglish) {
             if (
               isNflPlusPreseason ||
+              // Sunday Ticket grants out-of-market games, so it must not be DMA-gated
+              (i.authorizations.sunday_ticket && this.checkSundayTicketAccess()) ||
               (isInMarket &&
                 // If you have NFL+, you get the game
                 (hasPlus ||
@@ -474,14 +476,6 @@ class NflHandler {
           ) {
             events.push(i);
           } else if (i.callSign === 'NFLNETWORK' && nflNetworkAccess && i.contentType !== 'AUDIO') {
-            events.push(i);
-          } else if (
-            // Sunday Ticket
-            i.contentType === 'GAME' &&
-            isEnglish &&
-            i.authorizations.sunday_ticket &&
-            this.checkSundayTicketAccess()
-          ) {
             events.push(i);
           }
         }
