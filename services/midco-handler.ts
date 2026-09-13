@@ -5,32 +5,21 @@ import {userAgent} from './user-agent';
 import {ClassTypeWithoutMethods, IEntry, IProvider, TChannelPlaybackInfo} from './shared-interfaces';
 import {db} from './database';
 import {hideStudio} from './misc-db-service';
-import {getRandomUUID, normalTimeRange} from './shared-helpers';
+import {combineImages, normalTimeRange} from './shared-helpers';
 import {debug} from './debug';
 
-interface IMidcoEvent {
-  cast: {
-    actors: string[];
-  };
-  genres: string[];
+interface IParticipant {
   id: number;
-  images: {
-    poster: {
-      landscape: {
-        url: string;
-      }[];
-    };
-  };
-  schedule: {
-    startsAt: string;
-    endsAt: string;
-  };
-  shortDescription: string;
-  title: string;
-  video: {
-    accessLevel: string;
-    entitlementTags: string[];
-  };
+  images: string | null;
+}
+
+interface IMidcoEvent {
+  caption: string;
+  duration: number;
+  event_utc_ts: number;
+  home_team_id: number;
+  id: number;
+  participants: IParticipant[];
 }
 
 interface IMidcoMeta {
@@ -49,48 +38,252 @@ const REFERRER = [
   '/',
 ].join('');
 const BASE_API_URL = [
-  REFERRER,
-  'api/',
-  'core/',
+  'h',
+  't',
+  't',
+  'p',
+  's',
+  ':',
+  '/',
+  '/',
+  'm',
+  's',
+  'p',
+  '-',
+  'p',
+  'r',
+  'd',
+  '-',
+  'e',
+  'r',
+  'c',
+  '5',
+  'c',
+  'y',
+  'c',
+  'c',
+  'c',
+  '8',
+  'b',
+  'c',
+  'd',
+  '5',
+  'a',
+  'z',
+  '.',
+  'a',
+  '0',
+  '3',
+  '.',
+  'a',
+  'z',
+  'u',
+  'r',
+  'e',
+  'f',
+  'd',
+  '.',
+  'n',
+  'e',
+  't',
+  '/',
+  'a',
+  'p',
+  'i',
+  '/'
 ].join('');
 
-const API_COLLECTION = [
-  '0',
-  '1',
+const CHANNEL_KEY = [
+  'J',
+  'D',
+  'J',
+  '5',
+  'J',
+  'D',
   'E',
+  'w',
+  'J',
+  'E',
+  'x',
   'K',
-  'A',
+  'R',
+  'l',
+  'F',
+  'N',
+  'b',
+  'W',
+  'M',
+  '4',
+  'N',
+  'W',
+  't',
+  'U',
+  'V',
+  'm',
+  '9',
+  'L',
+  'M',
+  '0',
+  'N',
   'G',
+  'U',
+  'V',
+  'p',
+  'E',
+  'd',
+  'E',
+  '8',
+  'z',
+  'M',
+  'k',
+  't',
+  'k',
+  'a',
+  '2',
+  'V',
+  'x',
   'Z',
   'F',
-  'F',
-  'M',
-  '1',
-  'M',
-  'H',
-  'X',
-  'E',
-  'V',
-  '3',
-  '7',
-  'K',
-  'Y',
-  '8',
   'J',
+  'M',
+  'R',
+  'E',
+  'J',
+  'v',
+  'W',
+  'H',
+  'h',
+  'o',
+  'b',
   'V',
-  '3',
-  '1',
-  '3'
+  'V',
+  'x',
+  'W',
+  'j',
+  'B',
+  'M',
+  'Z',
+  'H',
+  'B',
+  'S',
+  'a',
+  'j',
+  'J',
+  'O',
+  'e',
+  'l',
+  'l',
+  'l',
 ].join('');
 
-const cookieToken = (token: string): string => {
-  return 'one-token=' + token + Buffer.from(token.substring(0, 24)).toString('base64');
-};
+const FALLBACK_IMAGE = [
+  'h',
+  't',
+  't',
+  'p',
+  's',
+  ':',
+  '/',
+  '/',
+  'e',
+  'n',
+  'c',
+  'r',
+  'y',
+  'p',
+  't',
+  'e',
+  'd',
+  '-',
+  't',
+  'b',
+  'n',
+  '0',
+  '.',
+  'g',
+  's',
+  't',
+  'a',
+  't',
+  'i',
+  'c',
+  '.',
+  'c',
+  'o',
+  'm',
+  '/',
+  'i',
+  'm',
+  'a',
+  'g',
+  'e',
+  's',
+  '?',
+  'q',
+  '=',
+  't',
+  'b',
+  'n',
+  ':',
+  'A',
+  'N',
+  'd',
+  '9',
+  'G',
+  'c',
+  'R',
+  'w',
+  '9',
+  't',
+  'C',
+  '9',
+  'L',
+  '9',
+  'A',
+  'M',
+  'i',
+  'm',
+  'Z',
+  '2',
+  '1',
+  'G',
+  'N',
+  'b',
+  'I',
+  'C',
+  'O',
+  'c',
+  '_',
+  'M',
+  'C',
+  '7',
+  't',
+  'z',
+  'j',
+  'H',
+  '3',
+  'U',
+  'M',
+  'u',
+  '0',
+  'q',
+  'D',
+  'J',
+  'G',
+  'm',
+  '7',
+  'T',
+  '3',
+  'w',
+  '&',
+  's',
+  '=',
+  '1',
+  '0',
+].join('');
 
 const parseAirings = async (events: IMidcoEvent[]) => {
   const hide_studio = await hideStudio();
-
-  const [now, endDate] = normalTimeRange();
 
   for (const event of events) {
     if (!event || !event.id) {
@@ -100,34 +293,92 @@ const parseAirings = async (events: IMidcoEvent[]) => {
     const entryExists = await db.entries.findOneAsync<IEntry>({id: `midco-${event.id}`});
 
     if (!entryExists) {
-      if ( hide_studio && event.title.toLowerCase().endsWith(' show') ) {
-        continue;
+      const start = moment(event.event_utc_ts * 1000);
+      const end = moment(event.event_utc_ts * 1000).add((event.duration + 90), 'minutes');
+      const originalEnd = moment(event.event_utc_ts * 1000).add(event.duration, 'minutes');
+
+      console.log('Adding event: ', event.caption);
+
+      let name = '';
+      const description = event.caption.trim();
+      let categories: string[] = [];
+      let sport = '';
+
+      const pipeCount = (event.caption.match(/\|/g) || []).length;
+      let matchedFormat = false;
+      let firstPart = '';
+      let secondPart = '';
+
+      if (pipeCount >= 2) {
+        // Standard format: "Sport | Matchup | Metadata"
+        const [extractedFirst, extractedSecond, ...rest] = event.caption.split('|');
+        firstPart = extractedFirst.trim();
+        secondPart = (extractedSecond || '').trim();
+
+        name = secondPart ? `${firstPart} - ${secondPart}` : firstPart;
+        matchedFormat = true;
+      } else if (event.caption.includes('-')) {
+        // Alternative format: "Sport - Matchup | Metadata"
+        const [extractedFirst, ...rest] = event.caption.split('-');
+        firstPart = extractedFirst.trim();
+
+        const remainingText = rest.join('-').trim();
+        const [matchup, ...metaRest] = remainingText.split('|');
+        secondPart = matchup.trim();
+
+        name = secondPart ? `${firstPart} - ${secondPart}` : firstPart;
+        matchedFormat = true;
+      } else {
+        // Fallback if neither delimiter pattern fits
+        name = description;
       }
 
-      const start = moment(event.schedule.startsAt);
-      // endsAt is inaccurate, and startAt can be 30 minutes early
-      // so we just assume 3.5-5 hour duration for all events
-      const end = moment(event.schedule.startsAt).add(5, 'hours');
-      const originalEnd = moment(event.schedule.startsAt).add(3.5, 'hours');
+      // Extract sport and categories if a valid delimiter pattern was matched
+      if (matchedFormat) {
+        sport = firstPart;
 
-      if (end.isBefore(now) || start.isAfter(endDate)) {
-        continue;
+        const words = firstPart.split(/\s+/);
+        const lastWord = words[words.length - 1];
+
+        // If the extracted first part ends with "Show"
+        if (lastWord.toLowerCase() === 'show') {
+          if ( hide_studio ) {
+            continue;
+          }
+          sport = words[0]; // First word becomes sport (e.g., "Football")
+          name = secondPart ? `${sport} - ${secondPart}` : event.caption.trim();
+        }
+
+        categories = [firstPart, sport];
       }
 
-      console.log('Adding event: ', event.title);
+      const homeTeam = event.participants.find(
+        (participant: any) => participant.id === event.home_team_id
+      );
+      const awayTeam = event.participants.find(
+        (participant: any) => participant.id !== event.home_team_id
+      );
+      const homeTeamImageUrl = homeTeam?.images ?? null;
+      const awayTeamImageUrl = awayTeam?.images ?? null;
+      let image: string;
+      if (homeTeamImageUrl && awayTeamImageUrl) {
+        image = await combineImages(awayTeamImageUrl, homeTeamImageUrl);
+      } else {
+        image = homeTeamImageUrl || awayTeamImageUrl || FALLBACK_IMAGE;
+      }
 
       await db.entries.insertAsync<IEntry>({
-        categories: event.cast.actors,
-        description: event.shortDescription,
+        categories,
+        description,
         duration: end.diff(start, 'seconds'),
         end: end.valueOf(),
         from: 'midco',
         id: `midco-${event.id}`,
-        image: event.images.poster.landscape[0].url,
-        name: event.title,
+        image,
+        name,
         network: 'Midco Sports',
         originalEnd: originalEnd.valueOf(),
-        sport: event.genres.join(' - '),
+        sport,
         start: start.valueOf(),
       });
     }
@@ -135,10 +386,7 @@ const parseAirings = async (events: IMidcoEvent[]) => {
 };
 
 class MidcoHandler {
-  public token?: string;
-  public refreshToken?: string;
-  public expiration?: number;
-  public entitlements?: string[];
+  public api_key?: string;
 
   public initialize = async () => {
     const setup = (await db.providers.countAsync({name: 'midco'})) > 0 ? true : false;
@@ -164,19 +412,40 @@ class MidcoHandler {
     await this.load();
   };
 
-  public refreshTokens = async () => {
-    const {enabled} = await db.providers.findOneAsync<IProvider>({name: 'midco'});
+  private fetchEvents = async (streamStatus: string, limit: number, offset: number, retryCount = 0): Promise<any> => {
+    try {
+      if (retryCount >= 2) {
+        console.error('Failed to refresh Midco Sports key');
+      }
 
-    if (!enabled) {
-      return;
-    }
+      const response = await axios.get(BASE_API_URL + 'events', {
+        params: {
+          'stream_status[]': streamStatus,
+          limit,
+          offset,
+          sort_direction: 'asc',
+          api_key: this.api_key,
+        },
+        headers: {
+          'Accept': 'application/json, text/plain, */*',
+          'Accept-Language': 'en-US,en;q=0.9',
+          'Accept-Encoding': 'gzip, deflate, br, zstd',
+          'Content-Type': 'application/json',
+          'Origin': ORIGIN,
+          'User-Agent': userAgent,
+        },
+      });
 
-    if (!this.expiration) {
-      await this.login();
-    }
+      if (response.data?.error?.errors?.api_key === 'Key not valid') {
+        console.log('refreshing Midco Sports key');
+        await this.login();
+        return this.fetchEvents(streamStatus, limit, offset, retryCount + 1);
+      }
 
-    if (moment().isBefore(this.expiration)) {
-      return;
+      return response.data?.data ?? [];
+    } catch (e) {
+      console.error(e);
+      console.log('Could not fetch Midco Sports events');
     }
   };
 
@@ -187,8 +456,6 @@ class MidcoHandler {
       return;
     }
 
-    await this.refreshTokens();
-
     console.log('Looking for Midco Sports events...');
 
     const entries: IMidcoEvent[] = [];
@@ -196,35 +463,42 @@ class MidcoHandler {
     const [now, endSchedule] = normalTimeRange();
 
     try {
-      const url = [
-        BASE_API_URL,
-        'catalog/',
-        'collection/',
-        API_COLLECTION,
-        '?page=1',
-        '&pageSize=100',
-        '&locale=en',
-      ].join('');
+      let streamStatus = 'live';
+      let offset = 0;
+      const limit = 12;
 
-      const {data} = await axios.get(url, {
-        headers: {
-          Accept: 'application/json, text/plain, */*',
-          'Accept-Language': 'en-US,en;q=0.9',
-          'Accept-Encoding': 'gzip, deflate, br, zstd',
-          'Content-Type': 'application/json',
-          Cookie: cookieToken(this.token),
-          Referer: REFERRER,
-          'User-Agent': userAgent,
-        },
-      });
+      while (true) {
+        const events = await this.fetchEvents(streamStatus, limit, offset);
 
-      debug.saveRequestData(data, 'midco', 'epg');
-
-      data.data.forEach(e => {
-        if ( (e.video.accessLevel != 'ENTITLEMENT_REQUIRED') || this.entitlements.some(entitlement => e.video.entitlementTags.includes(entitlement)) ) {
-          entries.push(e);
+        if ((!events || events.length === 0) && streamStatus === 'live') {
+          streamStatus = 'upcoming';
+          offset = 0;
+          continue;
         }
-      });
+
+        if (!events || events.length === 0) {
+          break;
+        }
+
+        let reachedEndSchedule = false;
+
+        for (const event of events) {
+          if (moment(event.event_utc_ts * 1000).isAfter(endSchedule)) {
+            reachedEndSchedule = true;
+            break;
+          }
+          if (!event.has_access) {
+            continue;
+          }
+          entries.push(event);
+        }
+
+        if (reachedEndSchedule) {
+          break;
+        }
+
+        offset += limit;
+      };
     } catch (e) {
       console.error(e);
       console.log('Could not parse Midco Sports events');
@@ -233,36 +507,52 @@ class MidcoHandler {
     await parseAirings(entries);
   };
 
-  public getEventData = async (eventId: string): Promise<TChannelPlaybackInfo> => {
-    await this.refreshTokens();
-
-    const eventRealId = eventId.split('midco-')[1];
-
-    const url = [
-      BASE_API_URL,
-      'play/',
-      'item/',
-      eventRealId,
-      '?via=1.0.',
-      API_COLLECTION,
-      '&include=contentObject',
-      '&locale=en',
-    ].join('');
-
+  private fetchEvent = async (eventId: string, retryCount = 0): Promise<any> => {
     try {
-      const {data} = await axios.get(url, {
+      if (retryCount >= 2) {
+        console.error('Failed to refresh Midco Sports key');
+      }
+
+      const response = await axios.get(BASE_API_URL + `events/${eventId}`, {
+        params: {
+          api_key: this.api_key,
+        },
         headers: {
-          Accept: 'application/json, text/plain, */*',
+          'Accept': 'application/json, text/plain, */*',
           'Accept-Language': 'en-US,en;q=0.9',
           'Accept-Encoding': 'gzip, deflate, br, zstd',
           'Content-Type': 'application/json',
-          Cookie: cookieToken(this.token),
-          Referer: REFERRER,
+          'Origin': ORIGIN,
           'User-Agent': userAgent,
         },
       });
 
-      return [data.playbackInfo.videoStreams[0].url, {}];
+      if (response.data?.error?.errors?.api_key === 'Key not valid') {
+        console.log('refreshing Midco Sports key');
+        await this.login();
+        return this.fetchEvent(eventId, retryCount + 1);
+      }
+
+      return response.data?.data ?? [];
+    } catch (e) {
+      console.error(e);
+      console.log('Could not fetch Midco Sports event');
+    }
+  };
+
+  public getEventData = async (eventId: string): Promise<TChannelPlaybackInfo> => {
+    try {
+      const eventRealId = eventId.split('midco-')[1];
+
+      const eventData = await this.fetchEvent(eventRealId);
+
+      const streamMedia = eventData.media?.find(
+        (item: any) =>
+          typeof item.media_url === 'string' &&
+          /\.m3u8(\?|$)/i.test(item.media_url)
+      );
+
+      return [streamMedia?.media_url ?? null, {'Origin': ORIGIN, 'User-Agent': userAgent}];
     } catch (e) {
       console.error(e);
       console.log('Could not start playback');
@@ -270,79 +560,39 @@ class MidcoHandler {
   };
 
   public login = async (email?: string, password?: string): Promise<boolean> => {
-    const url = [
-      BASE_API_URL,
-      'auth/',
-      'login',
-      '?locale=en'
-    ].join('');
-
-    const device_id = getRandomUUID();
-
     try {
-      const {meta} = await db.providers.findOneAsync<IProvider<any, IMidcoMeta>>({name: 'midco'});
-
-      const params = {
-        deviceInfo: {
-          id: device_id,
-          hardware: {
-            manufacturer: 'UNKNOWN/UNKNOWN',
-            model: 'Firefox',
-            version: '148.0',
-          },
-          os: {
-            name: 'Windows',
-            version: '11',
-          },
-          display: {
-            width: 2165,
-            height: 939,
-            formFactor: 'DESKTOP',
-          },
-          legal: {},
-        },
-        values: {
-          email: email || meta.email,
-          password: password || meta.password,
-        },
+      const apiKeyUrl = BASE_API_URL + 'get_api_key';
+      const payload = {
+        channel_key: 'JDJ5JDEwJExKRlFNbWM4NWtUVm9LM0NGUVpEdE8zMktka2VxZFJMREJvWHhobVVxWjBMZHBSajJOelll'
       };
-
-      const {data} = await axios.post(url, params, {
+      const { data: apiKeyData } = await axios.post(apiKeyUrl, payload, {
         headers: {
-          Accept: 'application/json, text/plain, */*',
+          'Accept': 'application/json, text/plain, */*',
           'Accept-Language': 'en-US,en;q=0.9',
           'Accept-Encoding': 'gzip, deflate, br, zstd',
           'Content-Type': 'application/json',
-          Origin: ORIGIN,
-          Referer: REFERRER,
+          'Origin': ORIGIN,
           'User-Agent': userAgent,
         },
       });
+      this.api_key = apiKeyData.data.api_key;
 
-      this.token = data._meta.auth.token;
-      this.refreshToken = data._meta.auth.refreshToken;
-      this.expiration = data._meta.auth.expiration;
-
-
-      const entitlements_url = [
-        BASE_API_URL,
-        'user/',
-        'profile',
-        '?locale=en'
-      ].join('');
-
-      const {data: entitlements_data} = await axios.get(entitlements_url, {
+      const loginUrl = BASE_API_URL + 'v2/auth/login';
+      const loginPayload = {
+        email,
+        password,
+        api_key: this.api_key,
+      };
+      await axios.post(loginUrl, loginPayload, {
         headers: {
-          Accept: 'application/json, text/plain, */*',
+          'Accept': 'application/json, text/plain, */*',
           'Accept-Language': 'en-US,en;q=0.9',
           'Accept-Encoding': 'gzip, deflate, br, zstd',
-          Cookie: cookieToken(this.token),
-          Referer: REFERRER,
+          'Content-Type': 'application/json',
+          'Origin': ORIGIN,
           'User-Agent': userAgent,
         },
       });
-
-      this.entitlements = entitlements_data.entitlements.grantedEntitlementTags;
 
       await this.save();
 
@@ -361,12 +611,9 @@ class MidcoHandler {
 
   private load = async (): Promise<void> => {
     const {tokens} = await db.providers.findOneAsync<IProvider<TMidcoTokens>>({name: 'midco'});
-    const {token, refreshToken, expiration, entitlements} = tokens || {};
+    const {api_key} = tokens || {};
 
-    this.token = token;
-    this.refreshToken = refreshToken;
-    this.expiration = expiration;
-    this.entitlements = entitlements;
+    this.api_key = api_key;
   };
 }
 

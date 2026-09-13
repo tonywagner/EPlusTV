@@ -130,7 +130,7 @@ export class PlaylistHandler {
       if (!('User-Agent' in headers)) {
         headers['User-Agent'] = userAgent;
       }
-      
+
       const {
         data: manifest,
         request,
@@ -294,7 +294,7 @@ export class PlaylistHandler {
         }
         updatedManifest = updatedManifest.replace(variant.uri, `${this.baseProxyUrl}${chunklistName}.m3u8`);
       });
-      
+
       for (const key of playlist.sessionKeyList) {
         const fullKeyUrl = isRelativeUrl(key.uri)
           ? usesHostRoot(key.uri)
@@ -303,12 +303,12 @@ export class PlaylistHandler {
               ? cleanUrl(`${createBaseUrl(realManifestUrl)}${key.uri}`)
               : cleanUrl(`${realManifestUrl}${key.uri}`)
           : key.uri;
-        
+
         const response = await axios.get<string>(fullKeyUrl, {
           headers: headers,
           responseType: 'arraybuffer',
         });
-        
+
         const buffer = Buffer.from(response.data);
         const base64String = buffer.toString('base64');
 
@@ -348,7 +348,7 @@ export class PlaylistHandler {
       if (!('User-Agent' in headers)) {
         headers['User-Agent'] = userAgent;
       }
-      
+
       const {data: chunkList, request} = await axios.get<string>(url, {
         headers: headers,
       });
@@ -365,7 +365,7 @@ export class PlaylistHandler {
       const chunks = HLS.parse(clonedChunklist);
 
       const shouldProxy =
-        proxyAllSegments || (this.network !== 'foxone' && baseManifestUrl.includes('akamai')) || this.network === 'mlbtv' || this.network === 'gotham';
+        proxyAllSegments || (this.network !== 'foxone' && baseManifestUrl.includes('akamai')) || this.network === 'mlbtv' || this.network === 'midco';
 
       chunks.segments.forEach(segment => {
         const segmentUrl = segment.uri;
