@@ -1,0 +1,21 @@
+❯ ok what's a good prompt to get you to pick up where we left off on the new system?
+
+* Short one, because the doc carries the context:
+
+Read docs/espn-via-capture/README.md — it's a handoff doc I wrote with you
+for restoring ESPN support via browser capture. Nothing is implemented yet.
+
+Start by running ./docs/espn-via-capture/verify-espn-api.sh and tell me
+whether the findings still hold. Then walk me through standing up PrismCast
+and confirming ad-hoc capture works by hand before we touch any EPlusTV code.
+
+That's enough. The doc has the decisions, the triage, and the line numbers, so I won't re-ask what we already settled or re-derive why the old approach is dead.
+
+Two things worth knowing about how that prompt behaves:
+
+- It puts verification first on purpose. Those findings are claims about ESPN's live API and PrismCast's main branch. If ESPN has moved again, I'll tell you before we build on stale ground rather than after.
+- It gates code behind a working manual capture. If curl -iL "http://localhost:5589/play?url=..." doesn't serve a playlist, nothing downstream can work, and you'd be debugging EPlusTV for a PrismCast problem.
+
+If you've already got PrismCast running and ESPN logged in by the time you sit down, swap the last sentence for Then start on step 1 of the implementation plan.
+
+One reminder: push the branch to your fork from this machine first, or there's nothing to clone.
