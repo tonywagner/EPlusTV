@@ -11,14 +11,18 @@ import {debug} from './debug';
 interface IParticipant {
   id: number;
   images: string | null;
+  name: string;
 }
 
 interface IMidcoEvent {
+  attribute_values: number[];
   caption: string;
   duration: number;
+  event_category_id: number;
   event_utc_ts: number;
   home_team_id: number;
   id: number;
+  name: string;
   participants: IParticipant[];
 }
 
@@ -28,10 +32,37 @@ interface IMidcoMeta {
 }
 
 const ORIGIN = [
-  'https://',
-  'www',
-  '.midcosportsplus',
-  '.com',
+  'h',
+  't',
+  't',
+  'p',
+  's',
+  ':',
+  '/',
+  '/',
+  'w',
+  'w',
+  'w',
+  '.',
+  'm',
+  'i',
+  'd',
+  'c',
+  'o',
+  's',
+  'p',
+  'o',
+  'r',
+  't',
+  's',
+  'p',
+  'l',
+  'u',
+  's',
+  '.',
+  'c',
+  'o',
+  'm',
 ].join('');
 const REFERRER = [
   ORIGIN,
@@ -282,6 +313,49 @@ const FALLBACK_IMAGE = [
   '0',
 ].join('');
 
+const CONFERENCE_MAP = {
+  '9': 'CCHA',
+  '10': 'MVFC',
+  '8': 'NSIC',
+  '11': 'Pioneer',
+  '56': 'Summit',
+};
+
+const CATEGORY_MAP = {
+  "28": "Acrobatics & Tumbling",
+  "2": "Baseball",
+  "1": "Basketball",
+  "17": "Cross Country",
+  "34": "Dance",
+  "26": "Equestrian",
+  "32": "eSports",
+  "3": "Football",
+  "25": "Golf",
+  "23": "Gymnastics",
+  "5": "Ice Hockey",
+  "8": "Indoor Track & Field",
+  "24": "Lacrosse",
+  "19": "Outdoor Track & Field",
+  "33": "Rugby",
+  "7": "Soccer",
+  "20": "Softball",
+  "21": "Swimming & Diving",
+  "22": "Tennis",
+  "9": "Volleyball",
+  "27": "Wheelchair Basketball",
+  "10": "Wrestling",
+};
+
+const GENDER_MAP = {
+  "11": "Men's",
+  "12": "Women's",
+};
+
+const STUDIO_KEYWORDS = [
+  'Show',
+  'Talk',
+];
+
 const parseAirings = async (events: IMidcoEvent[]) => {
   const hide_studio = await hideStudio();
 
@@ -293,79 +367,65 @@ const parseAirings = async (events: IMidcoEvent[]) => {
     const entryExists = await db.entries.findOneAsync<IEntry>({id: `midco-${event.id}`});
 
     if (!entryExists) {
+      if ( hide_studio && new RegExp(` (?:${STUDIO_KEYWORDS.join('|')})(?: |$)`).test(`${event.name} ${event.caption}`) ) {
+        continue;
+      }
+
       const start = moment(event.event_utc_ts * 1000);
       const end = moment(event.event_utc_ts * 1000).add((event.duration + 90), 'minutes');
       const originalEnd = moment(event.event_utc_ts * 1000).add(event.duration, 'minutes');
 
-      console.log('Adding event: ', event.caption);
+      const conference = CONFERENCE_MAP[event.event_category_id] || '';
 
-      let name = '';
-      const description = event.caption.trim();
-      let categories: string[] = [];
-      let sport = '';
+      const genderId = event.attribute_values.find(id => id.toString() in GENDER_MAP);
+      const gender = genderId ? GENDER_MAP[genderId] : '';
 
-      const pipeCount = (event.caption.match(/\|/g) || []).length;
-      let matchedFormat = false;
-      let firstPart = '';
-      let secondPart = '';
+      const categoryId = event.attribute_values.find(id => id.toString() in CATEGORY_MAP);
+      const sport = categoryId ? CATEGORY_MAP[categoryId] : '';
 
-      if (pipeCount >= 2) {
-        // Standard format: "Sport | Matchup | Metadata"
-        const [extractedFirst, extractedSecond, ...rest] = event.caption.split('|');
-        firstPart = extractedFirst.trim();
-        secondPart = (extractedSecond || '').trim();
+      let awayTeam;
+      let homeTeam;
+      let matchup = event.name;
+      let image = FALLBACK_IMAGE;
+      if ( event.home_team_id && event.participants && (event.participants.length === 2) ) {
+        homeTeam = event.participants.find(
+          (participant: any) => participant.id === event.home_team_id
+        );
+        awayTeam = event.participants.find(
+          (participant: any) => participant.id !== event.home_team_id
+        );
 
-        name = secondPart ? `${firstPart} - ${secondPart}` : firstPart;
-        matchedFormat = true;
-      } else if (event.caption.includes('-')) {
-        // Alternative format: "Sport - Matchup | Metadata"
-        const [extractedFirst, ...rest] = event.caption.split('-');
-        firstPart = extractedFirst.trim();
-
-        const remainingText = rest.join('-').trim();
-        const [matchup, ...metaRest] = remainingText.split('|');
-        secondPart = matchup.trim();
-
-        name = secondPart ? `${firstPart} - ${secondPart}` : firstPart;
-        matchedFormat = true;
-      } else {
-        // Fallback if neither delimiter pattern fits
-        name = description;
-      }
-
-      // Extract sport and categories if a valid delimiter pattern was matched
-      if (matchedFormat) {
-        sport = firstPart;
-
-        const words = firstPart.split(/\s+/);
-        const lastWord = words[words.length - 1];
-
-        // If the extracted first part ends with "Show"
-        if (lastWord.toLowerCase() === 'show') {
-          if ( hide_studio ) {
-            continue;
-          }
-          sport = words[0]; // First word becomes sport (e.g., "Football")
-          name = secondPart ? `${sport} - ${secondPart}` : event.caption.trim();
+        if (awayTeam?.name && homeTeam?.name) {
+          matchup = `${awayTeam.name} vs. ${homeTeam.name}`;
         }
 
-        categories = [firstPart, sport];
+        const homeTeamImageUrl = homeTeam?.images ?? null;
+        const awayTeamImageUrl = awayTeam?.images ?? null;
+        if (homeTeamImageUrl && awayTeamImageUrl) {
+          image = await combineImages(awayTeamImageUrl, homeTeamImageUrl);
+        } else {
+          image = homeTeamImageUrl || awayTeamImageUrl || FALLBACK_IMAGE;
+        }
       }
 
-      const homeTeam = event.participants.find(
-        (participant: any) => participant.id === event.home_team_id
-      );
-      const awayTeam = event.participants.find(
-        (participant: any) => participant.id !== event.home_team_id
-      );
-      const homeTeamImageUrl = homeTeam?.images ?? null;
-      const awayTeamImageUrl = awayTeam?.images ?? null;
-      let image: string;
-      if (homeTeamImageUrl && awayTeamImageUrl) {
-        image = await combineImages(awayTeamImageUrl, homeTeamImageUrl);
-      } else {
-        image = homeTeamImageUrl || awayTeamImageUrl || FALLBACK_IMAGE;
-      }
+      const sportPrefix = [conference, gender, sport].filter(Boolean).join(' ');
+
+      const name = [sportPrefix, matchup].filter(Boolean).join(' - ');
+
+      console.log('Adding event: ', name);
+
+      const genderAndSport = [gender, sport].filter(Boolean).join(' ');
+      const collegeSport = sport ? `College ${sport}` : '';
+      const categories = [
+        conference,
+        sport,
+        genderAndSport,
+        collegeSport,
+        awayTeam?.name,
+        homeTeam?.name,
+      ].filter(Boolean);
+
+      const description = event.caption.trim();
 
       await db.entries.insertAsync<IEntry>({
         categories,
