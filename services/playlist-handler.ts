@@ -86,6 +86,7 @@ const parseReplacementUrl = (uri: string, manifestUrl: string): string => {
 export class PlaylistHandler {
   public playlist: string;
   private chunklistUrlMap: Map<string, string> = new Map();
+  private subtitleChunklists: Set<string> = new Set();
 
   private baseUrl: string;
   private baseProxyUrl: string;
@@ -245,6 +246,7 @@ export class PlaylistHandler {
             const fullChunklistUrl = parseReplacementUrl(track[1], realManifestUrl);
             const chunklistUrlForName = this.network === 'foxone' && isUHDStream ? cleanForChunklist(fullChunklistUrl) : fullChunklistUrl;
             const chunklistName = cacheLayer.getChunklistFromUrl(chunklistUrlForName);
+            this.subtitleChunklists.add(chunklistName);
             if (this.network === 'foxone' && isUHDStream) {
               const fullUrl = urlParams ? mergeQueryParams(fullChunklistUrl, urlParams) : fullChunklistUrl;
               this.chunklistUrlMap.set(chunklistName, fullUrl);
@@ -325,7 +327,7 @@ export class PlaylistHandler {
 
   public cacheChunklist(chunklistId: string): Promise<string> {
     if (this.segmentDuration) {
-      return promiseCache.getPromise(chunklistId, this.proxyChunklist(chunklistId), this.segmentDuration * 1000);
+      return promiseCache.getPromise(chunklistId, () => this.proxyChunklist(chunklistId), this.segmentDuration * 1000);
     }
 
     return this.proxyChunklist(chunklistId);
@@ -364,6 +366,9 @@ export class PlaylistHandler {
 
       const chunks = HLS.parse(clonedChunklist);
 
+      // Subtitle segments are WebVTT text, so they can't be served as MPEG-TS (ffmpeg fails to open the stream)
+      const segmentExt = this.subtitleChunklists.has(chunkListId) ? 'vtt' : 'ts';
+
       const shouldProxy =
         proxyAllSegments || (this.network !== 'foxone' && baseManifestUrl.includes('akamai')) || this.network === 'mlbtv' || this.network === 'midco';
 
@@ -387,7 +392,7 @@ export class PlaylistHandler {
           !segmentUrl.endsWith('mp4')
         ) {
           const segmentName = cacheLayer.getSegmentFromUrl(fullSegmentUrl, `${this.channel}-segment`);
-          updatedChunkList = updatedChunkList.replace(segmentUrl, `${this.baseUrl}${segmentName}.ts`);
+          updatedChunkList = updatedChunkList.replace(segmentUrl, `${this.baseUrl}${segmentName}.${segmentExt}`);
         } else {
           updatedChunkList = updatedChunkList.replace(segmentUrl, fullSegmentUrl);
         }

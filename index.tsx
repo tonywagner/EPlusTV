@@ -597,6 +597,28 @@ app.get('/channels/:id/:part{.+\\.ts$}', async c => {
   });
 });
 
+app.get('/channels/:id/:part{.+\\.vtt$}', async c => {
+  const id = c.req.param('id');
+  const part = c.req.param('part').split('.vtt')[0];
+
+  let contents: ArrayBuffer | undefined;
+
+  try {
+    contents = await appStatus.channels[id].player?.getSegmentOrKey(part);
+  } catch (e) {
+    return notFound(c);
+  }
+
+  if (!contents) {
+    return notFound(c);
+  }
+
+  return c.body(contents, 200, {
+    'Cache-Control': 'no-cache',
+    'Content-Type': 'text/vtt',
+  });
+});
+
 app.get('/channels/:id/:part{.+\\.m4i$}', async c => {
   const id = c.req.param('id');
   const part = c.req.param('part').split('.m4i')[0];
