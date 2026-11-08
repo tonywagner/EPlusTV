@@ -202,6 +202,8 @@ const TV_DEVICE_INFO = {
   versionName: '18.0.65.101385778',
 };
 
+const MISSING_ASSET_REFRESH_COOLDOWN_MS = 60 * 1000;
+
 const DEFAULT_CATEGORIES = ['NFL', 'NFL+', 'Football'];
 
 const nflConfigPath = path.join(configPath, 'nfl_tokens.json');
@@ -269,6 +271,42 @@ const parseAirings = async (events: INFLEvent[]) => {
           replay: event.callSign === 'NFLDIGITAL1_OO_v3' || event.broadcastAiringType === 'REAIR',
         }),
       });
+    }
+  }
+};
+
+const LINEAR_CALL_SIGNS = ['NFLNETWORK', 'NFLNRZ', 'NFLDIGITAL1_OO_v3'];
+
+// Drops cached linear entries that upstream withdrew while publishing an overlapping replacement
+// on the same channel. Entries with no replacement in the response are kept.
+const removeWithdrawnLinearEntries = async (events: INFLEvent[]) => {
+  const fetchedIds = new Set(events.map(e => e.externalId));
+
+  for (const callSign of LINEAR_CALL_SIGNS) {
+    const replacements = events
+      .filter(e => e.callSign === callSign)
+      .map(e => ({start: moment(e.startTime).valueOf(), end: moment(e.startTime).add(e.duration, 'seconds').valueOf()}))
+      .filter(r => Number.isFinite(r.start) && Number.isFinite(r.end));
+
+    if (replacements.length === 0) {
+      continue;
+    }
+
+    const cached = await db.entries.findAsync<IEntry>({
+      channel: callSign,
+      end: {$gt: Date.now()},
+      from: 'nfl+',
+      linear: true,
+    });
+
+    for (const entry of cached) {
+      const isWithdrawn = !fetchedIds.has(entry.id);
+      const hasReplacement = replacements.some(r => r.start < entry.end && r.end > entry.start);
+
+      if (isWithdrawn && hasReplacement) {
+        console.log('Removing withdrawn NFL asset: ', entry.name);
+        await db.entries.removeAsync({id: entry.id}, {});
+      }
     }
   }
 };
@@ -502,10 +540,26 @@ class NflHandler {
       }
 
       await parseAirings(events);
+      await removeWithdrawnLinearEntries(events);
     } catch (e) {
       console.error(e);
       console.log('Could not parse NFL events');
     }
+  };
+
+  private lastMissingAssetRefresh = 0;
+
+  // A 404 usually means upstream replaced the asset between schedule refreshes. Refresh once so
+  // the next tune selects the replacement; the cooldown keeps repeated 404s from looping.
+  private refreshAfterMissingAsset = async (): Promise<void> => {
+    const now = Date.now();
+
+    if (now - this.lastMissingAssetRefresh < MISSING_ASSET_REFRESH_COOLDOWN_MS) {
+      return;
+    }
+
+    this.lastMissingAssetRefresh = now;
+    await this.getSchedule();
   };
 
   public getEventData = async (id: string): Promise<TChannelPlaybackInfo> => {
@@ -542,6 +596,10 @@ class NflHandler {
     } catch (e) {
       console.error(e);
       console.log('Could not start playback');
+
+      if (axios.isAxiosError(e) && e.response?.status === 404) {
+        await this.refreshAfterMissingAsset();
+      }
     }
   };
 
