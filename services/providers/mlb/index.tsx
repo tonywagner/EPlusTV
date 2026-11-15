@@ -118,3 +118,17 @@ mlbtv.put('/snla-access', async c => {
 
   return c.html(<MlbBody enabled={enabled} tokens={tokens} channels={linear_channels} />);
 });
+
+mlbtv.put('/dsn-access', async c => {
+  const {linear_channels: originalChannels} = await db.providers.findOneAsync<IProvider>({name: 'mlbtv'});
+  const updatedValue = await mlbHandler.checkDsnAccess(true);
+
+  if (updatedValue && !originalChannels[4].enabled) {
+    await mlbHandler.getSchedule();
+    await scheduleEntries();
+  }
+
+  const {enabled, tokens, linear_channels} = await db.providers.findOneAsync<IProvider>({name: 'mlbtv'});
+
+  return c.html(<MlbBody enabled={enabled} tokens={tokens} channels={linear_channels} />);
+});

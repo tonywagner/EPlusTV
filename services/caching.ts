@@ -15,7 +15,10 @@ interface IPromiseMap {
 class PromiseCache {
   private mapper = new Map<string, IPromiseMap>();
 
-  public getPromise<T>(keyId: string, call: Promise<any>, ttl: number): Promise<T> {
+  // "call" is a function so the request only starts on a cache miss.
+  // A promise created up front and then discarded on a cache hit would be left without a handler,
+  // and a timeout on it would crash the process.
+  public getPromise<T>(keyId: string, call: () => Promise<any>, ttl: number): Promise<T> {
     const now = new Date().valueOf();
 
     const mappedPromse = this.mapper.get(keyId);
@@ -28,12 +31,14 @@ class PromiseCache {
       });
     }
 
+    const promise = call();
+
     this.mapper.set(keyId, {
-      promise: call,
+      promise,
       ttl: now + ttl,
     });
 
-    return call;
+    return promise;
   }
 
   public removePromise(keyId: string) {
@@ -98,13 +103,14 @@ class CacheLayer {
 
       const res = await promiseCache.getPromise<AxiosResponse<ArrayBuffer>>(
         segment,
-        axios.get<ArrayBuffer>(url, {
-          headers: {
-            'User-Agent': userAgent,
-            ...headers,
-          },
-          responseType: 'arraybuffer',
-        }),
+        () =>
+          axios.get<ArrayBuffer>(url, {
+            headers: {
+              'User-Agent': userAgent,
+              ...headers,
+            },
+            responseType: 'arraybuffer',
+          }),
         cacheTTL,
       );
 

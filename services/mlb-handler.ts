@@ -12,7 +12,7 @@ import {ClassTypeWithoutMethods, IEntry, IProvider, TChannelPlaybackInfo} from '
 import {db} from './database';
 import {debug} from './debug';
 import {usesLinear} from './misc-db-service';
-import {normalTimeRange} from './shared-helpers';
+import {combineImages, normalTimeRange} from './shared-helpers';
 
 interface IGameContent {
   media: {
@@ -76,6 +76,13 @@ interface ISNLAEvent {
 }
 
 interface ISNLAEventCombined extends ISNLAEvent, ISNLAProgram {}
+
+interface IDsnEvent {
+  startTime: number;
+  endTime: number;
+  title: string;
+  thumbnail: string;
+}
 
 interface ISNLAScheduleRes {
   programs: {
@@ -185,6 +192,12 @@ const LINEAR_CHANNELS = [
     id: 'SNLA',
     name: 'Spectrum SportsNet LA HD',
     stationId: '87024',
+  },
+  {
+    enabled: false,
+    id: 'DSN',
+    name: 'Detroit SportsNet',
+    stationId: '136329',
   },
 ];
 
@@ -404,6 +417,54 @@ const parseSnla = async (events: ISNLAEventCombined[]): Promise<void> => {
   }
 };
 
+const parseDsn = async (events: IDsnEvent[] = []): Promise<void> => {
+  const [now, endDate] = normalTimeRange();
+
+  for (const event of events) {
+    const start = moment(event.startTime);
+    const end = moment(event.endTime);
+
+    if (!start.isValid() || !end.isValid()) {
+      continue;
+    }
+
+    const entryId = `DSN - ${start.valueOf()}`;
+    const entryExists = await db.entries.findOneAsync<IEntry>({id: entryId});
+
+    if (!entryExists) {
+      const duration = moment.duration(end.diff(start)).asSeconds();
+
+      if (end.isBefore(now) || start.isAfter(endDate)) {
+        continue;
+      }
+
+      console.log('Adding event: ', event.title);
+
+      await db.entries.insertAsync<IEntry>({
+        categories: ['DSN'],
+        channel: 'DSN',
+        duration,
+        end: end.valueOf(),
+        from: 'mlbtv',
+        id: entryId,
+        image: event.thumbnail,
+        linear: true,
+        name: event.title,
+        network: 'DSN',
+        sport: 'NHL', // Detroit Tigers games go through MLB TV proper, Detroit Red Wings games are what comes through DSN, despite being served up by MLB TV. This is a bit of a misnomer, but the DSN channel is used for both.
+        start: start.valueOf(),
+      });
+    }
+  }
+};
+
+const getNhlSeason = (): string => {
+  const now = moment();
+  const startYear = now.month() >= 6 ? now.year() : now.year() - 1;
+
+  return `${startYear}${startYear + 1}`;
+};
+
 const COMMON_HEADERS = {
   'cache-control': 'no-cache',
   origin: 'https://www.mlb.com',
@@ -481,13 +542,14 @@ class MLBHandler {
     // Fix for me being a silly goose!
     const {linear_channels} = await db.providers.findOneAsync<IProvider<TMLBTokens>>({name: 'mlbtv'});
 
-    if (linear_channels.length < 4) {
+    if (linear_channels.length < 5) {
       await db.providers.updateAsync({name: 'mlbtv'}, {$set: {linear_channels: LINEAR_CHANNELS}});
 
       await this.checkMlbBigInningAccess();
       await this.checkMlbNetworkAccess();
       await this.checkSnyAccess();
       await this.checkSnlaAccess();
+      await this.checkDsnAccess();
     }
   };
 
@@ -572,6 +634,13 @@ class MLBHandler {
         const snlaEvents = await this.getSnlaSchedule();
         await parseSnla(snlaEvents);
       }
+
+      const dsnEnabled = await this.checkDsnAccess();
+
+      if (dsnEnabled) {
+        const dsnEvents = await this.getDsnSchedule();
+        await parseDsn(dsnEvents);
+      }
     } catch (e) {
       console.error(e);
       console.log('Could not parse MLB.tv events');
@@ -595,6 +664,8 @@ class MLBHandler {
         return this.getStream('SNY_LIVE');
       } else if (mediaId.indexOf('SNLA - ') > -1) {
         return this.getStream('SNLA_LIVE');
+      } else if (mediaId.indexOf('DSN - ') > -1) {
+        return this.getStream('DSN_LIVE');
       }
 
       const params = {
@@ -915,6 +986,24 @@ class MLBHandler {
     return enabled;
   };
 
+  public checkDsnAccess = async (getEntitlements = false): Promise<boolean> => {
+    if (!this.entitlements || getEntitlements) {
+      await this.getSession();
+    }
+
+    const useLinear = await usesLinear();
+
+    let enabled = false;
+
+    if (this.entitlements?.some(n => n.code === 'DSN') && useLinear) {
+      enabled = true;
+    }
+
+    await this.updateChannelAccess(4, enabled);
+
+    return enabled;
+  };
+
   private getSnlaSchedule = async (): Promise<ISNLAEventCombined[]> => {
     const snlaEvents: ISNLAEventCombined[] = [];
 
@@ -949,6 +1038,55 @@ class MLBHandler {
     }
 
     return snlaEvents;
+  };
+
+  private getDsnSchedule = async (): Promise<IDsnEvent[]> => {
+    try {
+      const {data} = await axios.get<{games?: any[]}>(
+        `https://api-web.nhle.com/v1/club-schedule-season/DET/${getNhlSeason()}`,
+        {
+          headers: {
+            'User-Agent': userAgent,
+          },
+        },
+      );
+
+      const games = (data.games ?? []).filter(game => game.tvBroadcasts?.some((b: {network: string}) => b.network === 'DSN'));
+
+      const [windowStart, windowEnd] = normalTimeRange();
+
+      return Promise.all(
+        games.map(async (game: any) => {
+          const puckDrop = moment(game.startTimeUTC).startOf('minute');
+          const start = moment(puckDrop).subtract(30, 'minutes');
+          const end = moment(puckDrop).add(210, 'minutes');
+
+          const title = `${game.awayTeam.placeName.default} ${game.awayTeam.commonName.default} @ ${game.homeTeam.placeName.default} ${game.homeTeam.commonName.default}`;
+
+          // Only games inside the schedule window become entries, so only build their images
+          let thumbnail = 'https://zpmc.tmsimg.com/h3/NowShowing/136329/GNLZZGG003JVL28.png?w=400';
+
+          if (end.isAfter(windowStart) && start.isBefore(windowEnd)) {
+            try {
+              thumbnail = await combineImages(game.awayTeam.logo, game.homeTeam.logo, 150);
+            } catch (e) {
+              console.log(`Could not build DSN thumbnail for ${title}`);
+            }
+          }
+
+          return {
+            startTime: start.valueOf(),
+            endTime: end.valueOf(),
+            title,
+            thumbnail,
+          } as IDsnEvent;
+        }),
+      );
+    } catch (e) {
+      console.error(e);
+      console.log('Could not get DSN schedule');
+      return [];
+    }
   };
 
   private getEvents = async (): Promise<any[]> => {
@@ -1089,6 +1227,7 @@ class MLBHandler {
       await this.checkMlbNetworkAccess();
       await this.checkSnyAccess();
       await this.checkSnlaAccess();
+      await this.checkDsnAccess();
       await this.getOktaToken();
 
       return true;

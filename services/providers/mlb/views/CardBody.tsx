@@ -40,6 +40,12 @@ export const MlbBody: FC<IMLBBodyProps> = ({enabled, tokens, open, channels}) =>
       link: 'https://www.mlb.com/commerce/mvpd/getdodgers',
       network: 'snla',
     },
+    {
+      btnText: 'Check DSN Access',
+      hintText: 'Enable with MLB.tv',
+      link: 'https://www.mlb.com/commerce/mvpd/dsn',
+      network: 'dsn',
+    },
   ];
 
   return (

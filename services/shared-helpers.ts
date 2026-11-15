@@ -114,8 +114,12 @@ export const downloadImage = async (url: string): Promise<Buffer> => {
   return Buffer.from(response.data, 'binary');
 };
 
-export const combineImages = async (url1: string, url2: string): Promise<string> => {
-  const [image1, image2] = await Promise.all([downloadImage(url1), downloadImage(url2)]);
+// "height" scales both images to that height first (needed for large sources such as SVG logos)
+export const combineImages = async (url1: string, url2: string, height?: number): Promise<string> => {
+  const [source1, source2] = await Promise.all([downloadImage(url1), downloadImage(url2)]);
+
+  const resize = (input: Buffer): Promise<Buffer> => (height ? sharp(input).resize({height}).png().toBuffer() : Promise.resolve(input));
+  const [image1, image2] = await Promise.all([resize(source1), resize(source2)]);
 
   const img1 = sharp(image1);
   const img2 = sharp(image2);

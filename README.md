@@ -143,6 +143,7 @@ Available to login with MLB.tv credentials
 | MLB Network | Only available if you have MLB Network as part of your MLB.tv account or have linked TVE Provider that provides access |
 | SNY | Only available if you have SNY as part of your MLB.tv account or have linked TVE Provider that provides access |
 | SNLA | Only available if you have SNLA+ as part of your MLB.tv account or have linked TVE Provider that provides access |
+| DSN | Only available if you have Detroit Sports Network as part of your MLB.tv account or have linked TVE Provider that provides access |
 
 #### Mountain West
 
