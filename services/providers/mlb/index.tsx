@@ -107,7 +107,7 @@ mlbtv.put('/sny-access', async c => {
 
 mlbtv.put('/snla-access', async c => {
   const {linear_channels: originalChannels} = await db.providers.findOneAsync<IProvider>({name: 'mlbtv'});
-  const updatedValue = await mlbHandler.checkSnyAccess(true);
+  const updatedValue = await mlbHandler.checkSnlaAccess(true);
 
   if (updatedValue && !originalChannels[3].enabled) {
     await mlbHandler.getSchedule();
